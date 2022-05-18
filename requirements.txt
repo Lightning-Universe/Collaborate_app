@@ -1,0 +1,4 @@
+torch
+hivemind
+lightning
+git+https://github.com/PyTorchLightning/pytorch-lightning.git
