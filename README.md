@@ -6,6 +6,7 @@ Requires npm/node to be installed to create the build. We'll eventually ship the
 
 ```
 cd lightning-collaborative/ui/
+npm i
 npm run build
 ```
 
