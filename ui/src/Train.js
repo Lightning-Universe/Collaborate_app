@@ -236,6 +236,12 @@ function Setup(props) {
                     </Grid>
                     <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
+                        {CheckButton(props.startInstallState, props.completePython)}
+                        <Item>Python Environment</Item>
+                      </Grid>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Grid container direction="row" alignItems="center">
                         {Status(props.startInstallState, props.completeMemory, props.memory)}
                         <Item>Available CUDA Memory</Item>
                       </Grid>
@@ -244,12 +250,6 @@ function Setup(props) {
                       <Grid container direction="row" alignItems="center">
                         {Status(props.startInstallState, props.completeInternet, props.bandwidth)}
                         <Item>Internet Bandwidth</Item>
-                      </Grid>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Grid container direction="row" alignItems="center">
-                        {CheckButton(props.startInstallState, props.completePython)}
-                        <Item>Python Environment</Item>
                       </Grid>
                     </Grid>
                 </Grid>
