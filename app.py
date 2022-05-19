@@ -16,7 +16,10 @@ class CheckEnvironmentWork(LightningWork):
         self.linux = None
         self.cuda = None
         self.internet = None
+        self.bandwidth = None
         self.python = None
+        self.memory = None
+        self.current_memory = None
         self.complete = False
 
     def run(self):
@@ -25,6 +28,9 @@ class CheckEnvironmentWork(LightningWork):
         self.cuda = setup.check_cuda_available()
         self.internet = setup.sufficient_internet()
         self.python = setup.check_python_environment()
+        self.memory = setup.check_memory()
+        self.bandwidth = setup.set_bandwidth()
+        self.current_memory = setup.set_cuda_memory()
         self.complete = True
 
 

@@ -24,3 +24,12 @@ class EnvironmentChecker:
 
     def check_python_environment(self):
         return operator.ge(Version(platform.python_version()), Version('3.0.0'))
+
+    def check_memory(self):
+        return True
+
+    def set_bandwidth(self):
+        return "1.5GB/s"
+
+    def set_cuda_memory(self):
+        return "16GiB"
