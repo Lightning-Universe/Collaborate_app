@@ -17,6 +17,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
 const ColorButton = styled(Button)(({ theme }) => ({
   color: "#FFFFFF",
@@ -137,17 +138,27 @@ function DiscreteCompressionSlider(props) {
 function CheckButton(startInstallState, complete) {
     if (startInstallState) {
         if (complete === 'complete'){
-            return (<CheckIcon fontSize="small" sx={{ fontSize: 16 }}/>)
+            return (<CheckIcon fontSize="small" sx={{ fontSize: 16, color: "#43d043" }}/>)
         }
         if (complete === 'failed'){
-            return (<ErrorOutlineIcon fontSize="small" sx={{ fontSize: 16 }}/>)
+            return (<ErrorOutlineIcon color="error" fontSize="small" sx={{ fontSize: 16 }}/>)
         }
         return (<RotateRightIcon fontSize="small" sx={{ fontSize: 16 }}/>)
     }
     return (<RadioButtonUncheckedIcon fontSize="small" sx={{ fontSize: 16 }}/>)
-// all the buttons need their own state for start and completion.
-// the way it should work is when the start install state is checked, we change icon
-// when the local prop changes from
+}
+
+function Status(startInstallState, complete, value) {
+    if (startInstallState) {
+        if (complete === 'complete'){
+            return (<Typography variant="body2" align="left" fontSize="small" sx={{ fontSize: 14, color: "#43d043" }}>{value}</Typography>)
+        }
+        if (complete === 'failed'){
+            return (<Typography variant="body2" align="left" color="red" fontSize="small" sx={{ fontSize: 14 }}>{value}</Typography>)
+        }
+        return (<MoreHorizIcon fontSize="small" sx={{ fontSize: 16 }}/>)
+    }
+    return (<RadioButtonUncheckedIcon fontSize="small" sx={{ fontSize: 16 }}/>)
 }
 
 function setCheck(check, set_prop_fn){
@@ -184,6 +195,10 @@ function Setup(props) {
             setCheck(checks['linux'], props.setCompleteLinux)
             setCheck(checks['python'], props.setCompletePython)
             setCheck(checks['internet'], props.setCompleteInternet)
+            setCheck(checks['memory'], props.setCompleteMemory)
+            props.setBandwidth(checks['bandwidth'])
+            props.setMemory(checks['current_memory'])
+            console.log(checks['bandwidth'], check['current_memory'])
             if (checks['complete']) {
                 props.setEnableTrainState(true);
             } else {
@@ -207,25 +222,31 @@ function Setup(props) {
             <ColorLoadingButton onClick={handleSetupClick} loading={!props.enableTrainState && props.startInstallState} disabled={props.enableTrainState} variant="contained" sx={{ mb:1, width:'100%' }}>{!props.enableTrainState ? "PRE-CHECK & INSTALL" : "COMPLETE"}</ColorLoadingButton>
             <Box sx={{ width: '100%' }}>
                 <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
                         {CheckButton(props.startInstallState, props.completeLinux)}
                         <Item>Linux</Item>
                       </Grid>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
                         {CheckButton(props.startInstallState, props.completeCUDA)}
                         <Item>CUDA Available</Item>
                       </Grid>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
-                        {CheckButton(props.startInstallState, props.completeInternet)}
-                        <Item>Sufficient Internet Connection</Item>
+                        {Status(props.startInstallState, props.completeMemory, props.memory)}
+                        <Item>Available CUDA Memory</Item>
                       </Grid>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
+                      <Grid container direction="row" alignItems="center">
+                        {Status(props.startInstallState, props.completeInternet, props.bandwidth)}
+                        <Item>Internet Bandwidth</Item>
+                      </Grid>
+                    </Grid>
+                    <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
                         {CheckButton(props.startInstallState, props.completePython)}
                         <Item>Python Environment</Item>
@@ -427,6 +448,11 @@ export default function Train(props){
   const [completeCUDA, setCompleteCUDA] = React.useState('wait')
   const [completeInternet, setCompleteInternet] = React.useState('wait')
   const [completePython, setCompletePython] = React.useState('wait')
+  const [completeMemory, setCompleteMemory] = React.useState('wait')
+
+  const [memory, setMemory] = React.useState('')
+  const [bandwidth, setBandwidth] = React.useState('')
+
 
   var state = props.state;
   var apiClient = props.apiClient;
@@ -443,7 +469,7 @@ export default function Train(props){
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           Join our collaborative training run, using Lightning Flash to train a translation model!
         </Typography>
-        {!startTraining ? Setup({completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, state, apiClient, refreshState}): null}
+        {!startTraining ? Setup({memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, state, apiClient, refreshState}): null}
         {!startTraining ? Config({enableTrainState, inviteText, setInviteText, compressionState, setCompressionState, mixedPrecision, setMixedPrecision, powerSGD, setPowerSGD, setPresetConfig, presetConfig, overlapCommunication, setOverlapCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
         {!startTraining ? StartTrain({enableTrainState, inviteText, compressionState, mixedPrecision, powerSGD, overlapCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
         {startTraining ? StopTrain({stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}
