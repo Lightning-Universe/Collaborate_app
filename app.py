@@ -96,17 +96,17 @@ class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         self.port = 3000
-        # self.react_ui = ReactUI()
+        self.react_ui = ReactUI()
         self.setup_flow = SetupFlow()
         self.train_flow = TrainFlow()
 
     def run(self):
-        # self.react_ui.run()
+        self.react_ui.run()
         self.train_flow.run()
         self.setup_flow.run()
 
-    # def configure_layout(self):
-    #     return [{"name": "train", "content": self.react_ui}]
+    def configure_layout(self):
+        return [{"name": "train", "content": self.react_ui}]
 
 
 app = LightningApp(root=RootFlow())
