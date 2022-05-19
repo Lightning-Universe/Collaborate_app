@@ -11,7 +11,7 @@ from lightning_collaborative.components.script import CollaborativeLightningScri
 
 class CheckEnvironmentWork(LightningWork):
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
         super().__init__(run_once=False)
         self.linux = None
         self.cuda = None
@@ -20,17 +20,22 @@ class CheckEnvironmentWork(LightningWork):
         self.python = None
         self.memory = None
         self.current_memory = None
+        self.warning = ''
+        self.success = False
         self.complete = False
+        self.debug = debug
 
     def run(self):
-        setup = EnvironmentChecker()
+        setup = EnvironmentChecker(debug=self.debug)
         self.linux = setup.check_linux()
         self.cuda = setup.check_cuda_available()
         self.internet = setup.sufficient_internet()
         self.python = setup.check_python_environment()
         self.memory = setup.check_memory()
-        self.bandwidth = setup.set_bandwidth()
-        self.current_memory = setup.set_cuda_memory()
+        self.bandwidth = str(setup.bandwidth()) + 'GB/s'
+        self.current_memory = str(setup.cuda_memory()) + 'GiB'
+        self.warning = setup.set_warning_message()
+        self.success = setup.successful()
         self.complete = True
 
 
@@ -73,7 +78,8 @@ class SetupFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         self.start = False
-        self.environment_check = CheckEnvironmentWork()
+        # todo: debug will mean even if we don't fulfill requirements, we'll be allowed to train.
+        self.environment_check = CheckEnvironmentWork(debug=True)
 
     def run(self):
         if self.start:
@@ -90,17 +96,17 @@ class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         self.port = 3000
-        self.react_ui = ReactUI()
+        # self.react_ui = ReactUI()
         self.setup_flow = SetupFlow()
         self.train_flow = TrainFlow()
 
     def run(self):
-        self.react_ui.run()
+        # self.react_ui.run()
         self.train_flow.run()
         self.setup_flow.run()
 
-    def configure_layout(self):
-        return [{"name": "train", "content": self.react_ui}]
+    # def configure_layout(self):
+    #     return [{"name": "train", "content": self.react_ui}]
 
 
 app = LightningApp(root=RootFlow())
