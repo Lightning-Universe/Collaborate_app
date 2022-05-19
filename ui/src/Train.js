@@ -198,9 +198,11 @@ function Setup(props) {
             setCheck(checks['memory'], props.setCompleteMemory)
             props.setBandwidth(checks['bandwidth'])
             props.setMemory(checks['current_memory'])
-            console.log(checks['bandwidth'], check['current_memory'])
+            props.setWarningMessage(checks['warning'])
             if (checks['complete']) {
-                props.setEnableTrainState(true);
+                if (checks['success']) {
+                    props.setEnableTrainState(true);
+                }
             } else {
                 console.log("rechecking state", props.state)
                 sleep(1000).then(check_fn);
@@ -254,9 +256,9 @@ function Setup(props) {
                     </Grid>
                 </Grid>
             </Box>
-            <Typography variant="body2" align="left" color="error" component="p" sx={{ letterSpacing: 1, mb:1, mt:1}}>
-                {props.warningMessage}
-            </Typography>
+            {
+            props.warningMessage.split('\n').map(warning => (<Typography variant="body2" align="left" color="error" component="p" sx={{ letterSpacing: 1, mt:1}}>{warning}</Typography>))
+            }
           </Paper>
     </React.Fragment>
   );
@@ -469,7 +471,7 @@ export default function Train(props){
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           Join our collaborative training run, using Lightning Flash to train a translation model!
         </Typography>
-        {!startTraining ? Setup({memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, state, apiClient, refreshState}): null}
+        {!startTraining ? Setup({memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
         {!startTraining ? Config({enableTrainState, inviteText, setInviteText, compressionState, setCompressionState, mixedPrecision, setMixedPrecision, powerSGD, setPowerSGD, setPresetConfig, presetConfig, overlapCommunication, setOverlapCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
         {!startTraining ? StartTrain({enableTrainState, inviteText, compressionState, mixedPrecision, powerSGD, overlapCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
         {startTraining ? StopTrain({stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}

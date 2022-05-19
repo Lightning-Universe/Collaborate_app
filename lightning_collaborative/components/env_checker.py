@@ -6,6 +6,11 @@ from packaging.version import Version
 
 
 class EnvironmentChecker:
+    def __init__(self, debug: bool = False, minimum_bandwidth_gb: int = 2, min_cuda_memory_gb: int = 8):
+        self.debug = debug
+        self.minimum_bandwidth_gb = minimum_bandwidth_gb
+        self.min_cuda_memory_gb = min_cuda_memory_gb
+
     def check_linux(self):
         return platform.system() == "Linux"
 
@@ -28,8 +33,27 @@ class EnvironmentChecker:
     def check_memory(self):
         return True
 
-    def set_bandwidth(self):
-        return "1.5GB/s"
+    def bandwidth(self):
+        return 1.5
 
-    def set_cuda_memory(self):
-        return "16GiB"
+    def cuda_memory(self):
+        return 4
+
+    def set_warning_message(self):
+        warning = ""
+        if not self.successful():
+            warning += 'Your machine does not support the minimal requirements (Requires Linux and Python 3).'
+        if self.successful():
+            if self.bandwidth() <= self.minimum_bandwidth_gb:
+                warning += 'The internet bandwidth is less than recommended. ' \
+                           'You may see a lot of out of sync/timeout ' \
+                           'errors as a result.'
+            if self.cuda_memory() <= self.min_cuda_memory_gb:
+                warning += f'\nThere is less CUDA memory than recommended. ' \
+                           f'Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB'
+        return warning
+
+    def successful(self):
+        if self.debug:
+            return True
+        return self.check_python_environment() and self.check_linux()
