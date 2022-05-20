@@ -10,13 +10,16 @@ import hivemind
 from flash.core.data.utils import download_data
 from flash.text import TextClassificationData, TextClassifier
 from flash.text.classification.collate import TextClassificationCollate
-from hivemind import SizeAdaptiveCompression, Float16Compression, Uniform8BitQuantization
+from hivemind import (
+    Float16Compression,
+    SizeAdaptiveCompression,
+    Uniform8BitQuantization,
+)
 from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
-from pytorch_lightning.loggers import WandbLogger
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
-
 from pytorch_lightning import Callback
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.strategies import CollaborativeStrategy
+from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 
 
 class EpochTimes(Callback):
@@ -25,13 +28,13 @@ class EpochTimes(Callback):
         self.start = None
 
     def on_train_batch_end(
-            self,
-            trainer: "pl.Trainer",
-            pl_module: "pl.LightningModule",
-            outputs,
-            batch: Any,
-            batch_idx: int,
-            unused: int = 0,
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs,
+        batch: Any,
+        batch_idx: int,
+        unused: int = 0,
     ) -> None:
         optimizer: hivemind.Optimizer = trainer.optimizers[0]
         if optimizer.local_epoch != self.recorded_epoch:
@@ -61,12 +64,12 @@ class TextClassifierCustom(TextClassifier):
 
 
 def main(
-        batch_size: int = 8192,
-        max_epochs: int = 100,
-        averaging_timeout: int = 300,
-        allreduce_timeout: int = 300,
-        *args,
-        **kwargs
+    batch_size: int = 8192,
+    max_epochs: int = 100,
+    averaging_timeout: int = 300,
+    allreduce_timeout: int = 300,
+    *args,
+    **kwargs,
 ):
     download_data("https://pl-flash-data.s3.amazonaws.com/imdb.zip", "./data/")
 
@@ -78,12 +81,17 @@ def main(
         batch_size=1,
     )
 
-    model = TextClassifierCustom(backbone="gpt2", labels=datamodule.labels, learning_rate=1e-5, max_length=512)
-    model.collate_fn = TextClassificationCollateCustom(backbone=model.hparams.backbone,
-                                                       max_length=model.hparams.max_length)
+    model = TextClassifierCustom(
+        backbone="gpt2", labels=datamodule.labels, learning_rate=1e-5, max_length=512
+    )
+    model.collate_fn = TextClassificationCollateCustom(
+        backbone=model.hparams.backbone, max_length=model.hparams.max_length
+    )
     # compresses values above threshold with 8bit Quantization, lower with Float16
     compression = SizeAdaptiveCompression(
-        threshold=2 ** 16 + 1, less=Float16Compression(), greater_equal=Uniform8BitQuantization()
+        threshold=2**16 + 1,
+        less=Float16Compression(),
+        greater_equal=Uniform8BitQuantization(),
     )
     trainer = flash.Trainer(
         max_epochs=max_epochs,
@@ -98,16 +106,18 @@ def main(
             averaging_timeout=averaging_timeout,
             allreduce_timeout=allreduce_timeout,
             # Use PowerSGD to reduce communication overhead
-            grad_averager_factory=partial(PowerSGDGradientAverager, averager_rank=32, min_compression_ratio=0.5),
+            grad_averager_factory=partial(
+                PowerSGDGradientAverager, averager_rank=32, min_compression_ratio=0.5
+            ),
             grad_compression=compression,
             state_averaging_compression=compression,
-            verbose=True
+            verbose=True,
         ),
         limit_val_batches=0,
         limit_test_batches=0,
         callbacks=EpochTimes(),
         log_every_n_steps=1,
-        logger=WandbLogger(project="taming-collab")
+        logger=WandbLogger(project="taming-collab"),
     )
     trainer.fit(model, datamodule=datamodule)
 

@@ -3,7 +3,7 @@ import signal
 from pathlib import Path
 from typing import Optional
 
-from lightning import LightningFlow, LightningApp, LightningWork
+from lightning import LightningApp, LightningFlow, LightningWork
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.front_end import ReactWebFrontend
@@ -11,7 +11,6 @@ from lightning_collaborative.components.script import CollaborativeLightningScri
 
 
 class CheckEnvironmentWork(LightningWork):
-
     def __init__(self, debug: bool = False):
         super().__init__(run_once=False)
         self.linux = None
@@ -22,7 +21,7 @@ class CheckEnvironmentWork(LightningWork):
         self.memory = None
         self.devices = None
         self.current_memory = None
-        self.warning = ''
+        self.warning = ""
         self.success = False
         self.complete = False
         self.debug = debug
@@ -34,8 +33,8 @@ class CheckEnvironmentWork(LightningWork):
         self.internet = setup.sufficient_internet()
         self.python = setup.check_python_environment()
         self.memory = setup.check_memory()
-        self.bandwidth = str(setup.bandwidth()) + 'GB/s'
-        self.current_memory = str(setup.cuda_memory()) + 'GiB'
+        self.bandwidth = str(setup.bandwidth()) + "GB/s"
+        self.current_memory = str(setup.cuda_memory()) + "GiB"
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         self.complete = True
@@ -72,12 +71,10 @@ class TrainFlow(LightningFlow):
             # we have to assign it to the module.
             setattr(
                 self,
-                f'work_{x}',
+                f"work_{x}",
                 CollaborativeLightningScript(
-                    script_path="train.py",
-                    run_once=False,
-                    parallel=True
-                )
+                    script_path="train.py", run_once=False, parallel=True
+                ),
             )
             getattr(self, f"work_{x}").run(
                 device=x,
@@ -85,7 +82,7 @@ class TrainFlow(LightningFlow):
                 power_sgd=self.power_sgd,
                 optimize_memory=self.optimize_memory,
                 overlap_communication=self.optimize_communication,
-                batch_size=self.batch_size
+                batch_size=self.batch_size,
             )
 
     def kill_train_works(self):
@@ -107,7 +104,6 @@ class TrainFlow(LightningFlow):
 
 
 class SetupFlow(LightningFlow):
-
     def __init__(self):
         super().__init__()
         self.start = False
