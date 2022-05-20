@@ -10,10 +10,10 @@ from packaging.version import Version
 
 class EnvironmentChecker:
     def __init__(
-            self,
-            debug: bool = False,
-            minimum_bandwidth_gb: int = 2,
-            min_cuda_memory_gb: int = 8,
+        self,
+        debug: bool = False,
+        minimum_bandwidth_gb: int = 2,
+        min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
@@ -50,14 +50,14 @@ class EnvironmentChecker:
 
     def cuda_memory(self) -> List[float]:
         if not self.check_cuda_available():
-            return [0.]
+            return [0.0]
         # does not work on Jetsons... (don't have nvidia-smi)
         try:
             res = subprocess.run(["nvidia-smi", "-q", "-x"], capture_output=True)
             if res.returncode != 0:
-                return [0.]
+                return [0.0]
         except FileNotFoundError:
-            return [0.]
+            return [0.0]
         nvidia_smi_log = ElementTree.fromstring(res.stdout)
         gpus = []
         for gpu in nvidia_smi_log.findall("gpu"):
