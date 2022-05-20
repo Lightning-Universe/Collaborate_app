@@ -1,12 +1,19 @@
 import importlib
 import operator
 import platform
+from xml.etree import ElementTree
+import subprocess
 
 from packaging.version import Version
 
 
 class EnvironmentChecker:
-    def __init__(self, debug: bool = False, minimum_bandwidth_gb: int = 2, min_cuda_memory_gb: int = 8):
+    def __init__(
+        self,
+        debug: bool = False,
+        minimum_bandwidth_gb: int = 2,
+        min_cuda_memory_gb: int = 8,
+    ):
         self.debug = debug
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
         self.min_cuda_memory_gb = min_cuda_memory_gb
@@ -22,13 +29,14 @@ class EnvironmentChecker:
         except:
             return False
         import torch
+
         return torch.cuda.is_available()
 
     def sufficient_internet(self):
         return True
 
     def check_python_environment(self):
-        return operator.ge(Version(platform.python_version()), Version('3.0.0'))
+        return operator.ge(Version(platform.python_version()), Version("3.0.0"))
 
     def check_memory(self):
         return True
@@ -37,20 +45,44 @@ class EnvironmentChecker:
         return 1.5
 
     def cuda_memory(self):
-        return 4
+        ## does not work on Jetsons... (don't have nvidia-smi)
+        res = subprocess.run(["nvidia-smi", "-q", "-x"], capture_output=True)
+        if res.returncode != 0:
+            return False
+        nvidia_smi_log = ElementTree.fromstring(res.stdout)
+        gpus = []
+        for gpu in nvidia_smi_log.findall("gpu"):
+            fb_memory_usage = gpu.find("fb_memory_usage")
+            # total used free
+            free = fb_memory_usage.find("free").text
+            # convert to gigabytes, only MiB seen in the wild...
+            if free.endswith(" MiB"):
+                free = float(free.rstrip(" MiB")) / 1024
+            elif free.endswith(" KiB"):
+                free = float(free.rstrip(" KiB")) / 1024 / 1024
+            elif free.endswith(" GiB"):
+                free = float(free.rstrip(" KiB"))
+            else:
+                raise RuntimeError("unexpected units")
+            gpus.append(free)
+        return gpus
 
     def set_warning_message(self):
         warning = ""
         if not self.successful():
-            warning += 'Your machine does not support the minimal requirements (Requires Linux and Python 3).'
+            warning += "Your machine does not support the minimal requirements (Requires Linux and Python 3)."
         if self.successful():
             if self.bandwidth() <= self.minimum_bandwidth_gb:
-                warning += 'The internet bandwidth is less than recommended. ' \
-                           'You may see a lot of out of sync/timeout ' \
-                           'errors as a result.'
-            if self.cuda_memory() <= self.min_cuda_memory_gb:
-                warning += f'\nThere is less CUDA memory than recommended. ' \
-                           f'Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB'
+                warning += (
+                    "The internet bandwidth is less than recommended. "
+                    "You may see a lot of out of sync/timeout "
+                    "errors as a result."
+                )
+            if any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory()):
+                warning += (
+                    f"\nThere is less CUDA memory in some cards than recommended. "
+                    f"Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB"
+                )
         return warning
 
     def successful(self):
