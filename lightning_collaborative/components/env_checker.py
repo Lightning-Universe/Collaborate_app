@@ -1,8 +1,8 @@
 import importlib
 import operator
 import platform
-from xml.etree import ElementTree
 import subprocess
+from xml.etree import ElementTree
 
 from packaging.version import Version
 
@@ -30,7 +30,10 @@ class EnvironmentChecker:
             return False
         import torch
 
-        return torch.cuda.is_available()
+        devices = 8
+        if torch.cuda.is_available():
+            devices = torch.cuda.device_count()
+        return torch.cuda.is_available(), devices
 
     def sufficient_internet(self):
         return True

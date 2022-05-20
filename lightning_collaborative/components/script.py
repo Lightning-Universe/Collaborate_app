@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,11 +13,12 @@ class CollaborativeLightningScript(PopenPythonScript):
     def __init__(self, script_path: Union[str, Path], **kwargs):
         super().__init__(script_path, **kwargs)
         self.logs = ""
+        self._device = None
 
     def run(
         self,
+        device: int,
         mixed_precision: bool,
-        compression: str,
         power_sgd: bool,
         overlap_communication: bool,
         optimize_memory: bool,
@@ -24,24 +26,25 @@ class CollaborativeLightningScript(PopenPythonScript):
     ) -> None:
         if mixed_precision:
             self.script_args += ["--mixed_precision"]
-        if compression:
-            self.script_args += [f"--compression={compression}"]
         if overlap_communication:
             self.script_args += ["--overlap_communication"]
         if optimize_memory:
             self.script_args += ["--optimize_memory"]
         self.script_args += [f"--batch_size={batch_size}"]
+        self._device = device
         return super().run()
 
     def _run_with_subprocess_popen(self) -> None:
         cmd = [sys.executable] + [self.script_path] + self.script_args
+        env = self.env if self.env is not None else os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(self._device)
         with subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,
             close_fds=True,
-            env=self.env,
+            env=env,
         ) as proc:
             self.pid = proc.pid
             if proc.stdout:

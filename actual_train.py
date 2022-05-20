@@ -11,16 +11,15 @@ from flash.core.data.utils import download_data
 from flash.text import TextClassificationData, TextClassifier
 from flash.text.classification.collate import TextClassificationCollate
 from hivemind import (
-    SizeAdaptiveCompression,
     Float16Compression,
+    SizeAdaptiveCompression,
     Uniform8BitQuantization,
 )
 from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
-from pytorch_lightning.loggers import WandbLogger
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
-
 from pytorch_lightning import Callback
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.strategies import CollaborativeStrategy
+from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 
 
 class EpochTimes(Callback):
@@ -90,7 +89,7 @@ def main(
     )
     # compresses values above threshold with 8bit Quantization, lower with Float16
     compression = SizeAdaptiveCompression(
-        threshold=2 ** 16 + 1,
+        threshold=2**16 + 1,
         less=Float16Compression(),
         greater_equal=Uniform8BitQuantization(),
     )

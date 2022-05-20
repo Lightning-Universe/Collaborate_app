@@ -5,8 +5,9 @@ from lightning.frontend import StaticWebFrontend
 
 
 class ReactWebFrontend(StaticWebFrontend):
-    """
-    Serves the react build via Flask. Couldn't get `StaticWebFrontend` to work, this seems to do the job.
+    """Serves the react build via Flask.
+
+    Couldn't get `StaticWebFrontend` to work, this seems to do the job.
     """
 
     def start_server(self, host: str, port: int) -> None:
