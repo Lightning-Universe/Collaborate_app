@@ -56,26 +56,23 @@ class TrainFlow(LightningFlow):
         self.logs = None
 
     @property
-    def training(self) -> bool:
-        return hasattr(self, "work_0")
-
-    @property
     def train_work_logs(self) -> Optional[str]:
         if hasattr(self, "work_0"):
             return self.work_0.logs
 
-    def _create_train_works(self):
+    def _start_train_works(self):
         # dynamically create the works to run. We run one for reach process.
         for x in range(int(self.devices)):
             # this is current way of creating works dynamically.
             # we have to assign it to the module.
-            setattr(
-                self,
-                f"work_{x}",
-                CollaborativeLightningScript(
-                    script_path="train.py", run_once=False, parallel=True
-                ),
-            )
+            if not hasattr(self, f"work_{x}"):
+                setattr(
+                    self,
+                    f"work_{x}",
+                    CollaborativeLightningScript(
+                        script_path="train.py", run_once=False, parallel=True
+                    ),
+                )
             getattr(self, f"work_{x}").run(
                 device=x,
                 mixed_precision=self.mixed_precision,
@@ -87,15 +84,15 @@ class TrainFlow(LightningFlow):
 
     def kill_train_works(self):
         for x in range(self.devices):
-            os.kill(getattr(self, f"work_{x}").pid, signal.SIGTERM)
-            delattr(self, f"work_{x}")
+            work = getattr(self, f"work_{x}")
+            os.kill(work.pid, signal.SIGTERM)
 
     def run(self):
         if self.train_work_logs:
             # todo: we only look at the logs from the first work
             self.logs = self.train_work_logs
-        if self.start_training and not self.stop_training and not self.training:
-            self._create_train_works()
+        if self.start_training and not self.stop_training:
+            self._start_train_works()
             self.start_training = False
         if self.stop_training:
             self.start_training = False
@@ -107,7 +104,8 @@ class SetupFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         self.start = False
-        # todo: debug will mean even if we don't fulfill requirements, we'll be allowed to train.
+        # todo: debug will mean even if we don't fulfill requirements,
+        #  we'll be allowed to train.
         self.environment_check = CheckEnvironmentWork(debug=True)
 
     def run(self):

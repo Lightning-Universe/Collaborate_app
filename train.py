@@ -6,6 +6,7 @@ import fire
 
 def main(*args, **kwargs):
     print(args, kwargs, flush=True)
+    print("device", os.environ["CUDA_VISIBLE_DEVICES"])
     count = 0
 
     while True:
