@@ -1,3 +1,4 @@
+import os
 import time
 
 import fire
@@ -5,6 +6,7 @@ import fire
 
 def main(*args, **kwargs):
     print(args, kwargs, flush=True)
+    print("device", os.environ["CUDA_VISIBLE_DEVICES"])
     count = 0
 
     while True:
@@ -13,5 +15,5 @@ def main(*args, **kwargs):
         time.sleep(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fire.Fire(main)

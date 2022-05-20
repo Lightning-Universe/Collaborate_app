@@ -60,8 +60,8 @@ function Options(props){
     var powerSGDChange = (e) => {
       props.setPowerSGD(e.target.checked)
     };
-    var overlapCommunication = (e) => {
-      props.setOverlapCommunication(e.target.checked)
+    var optimizeCommunication = (e) => {
+      props.setOptimizeCommunication(e.target.checked)
     };
     var optimizeMemory = (e) => {
       props.setOptimizeMemory(e.target.checked)
@@ -72,7 +72,7 @@ function Options(props){
             <FormGroup row={true}>
                 <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Mixed Precision</Typography>} />
                 <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Overlap Communication</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
                 <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
             </FormGroup>
         </Box>
@@ -83,7 +83,7 @@ function Options(props){
         <FormGroup row={true}>
             <FormControlLabel labelPlacement="start" control={<Switch onChange={mixedPrecisionChange}size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Mixed Precision</Typography>} />
             <FormControlLabel labelPlacement="start" control={<Switch onChange={powerSGDChange} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
-            <FormControlLabel labelPlacement="start" control={<Switch onChange={overlapCommunication} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Overlap Communication</Typography>} />
+            <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeCommunication} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
             <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeMemory} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
         </FormGroup>
     </Box>
@@ -97,7 +97,7 @@ function DiscreteBatchSizeSlider(props) {
     <Box sx={{ width: "80%", ml:1 , mb:2}}>
       <Slider
         size="small"
-        aria-label="Compression"
+        aria-label="Batch Size"
         defaultValue={8192}
         valueLabelDisplay="auto"
         step={512}
@@ -111,22 +111,25 @@ function DiscreteBatchSizeSlider(props) {
     </Box>
   );
 }
-function DiscreteCompressionSlider(props) {
-  var states = ['None', 'FP16', 'Adaptive']
+function DeviceSlider(props) {
   var handleChange = (index, value) => {
-    props.setCompressionState(states[value])
+    props.setDeviceState(value)
   };
+  let devices = [];
+  [...Array(props.devices).keys()].forEach(k => {
+    devices.push({label: (k+1), value: (k+1)});
+  });
   return (
     <Box sx={{ width: "80%", ml:1 , mb:2}}>
       <Slider
         size="small"
-        aria-label="Compression"
-        defaultValue={2}
-        valueLabelDisplay="off"
-        step={1}
-        marks={[{label:'None', value:0}, {label:'FP16', value:1}, {label:'Adaptive FP16/INT8', value:2}]}
+        aria-label="Devices"
+        defaultValue={1}
+        valueLabelDisplay="auto"
+        marks={devices}
         min={0}
-        max={2}
+        step={null}
+        max={props.devices}
         onChange={handleChange}
         sx={{color: "#FFFFFF"}}
         disabled={props.presetConfig}
@@ -180,7 +183,6 @@ function Setup(props) {
           return;
         }
         props.setStartInstallState(true);
-        console.log(props.state)
         props.state.flows.setup_flow.vars['start'] = true;
         props.apiClient.setState(props.state);
         props.refreshState();
@@ -199,6 +201,7 @@ function Setup(props) {
             props.setBandwidth(checks['bandwidth'])
             props.setMemory(checks['current_memory'])
             props.setWarningMessage(checks['warning'])
+            props.setDevices(checks['devices'])
             if (checks['complete']) {
                 if (checks['success']) {
                     props.setEnableTrainState(true);
@@ -273,10 +276,9 @@ function Config(props) {
         }
         props.setMixedPrecision(true);
         props.setPowerSGD(true);
-        props.setCompressionState('Adaptive');
         props.setBatchSize(8192);
         props.setOptimizeMemory(true);
-        props.setOverlapCommunication(true);
+        props.setOptimizeCommunication(true);
         props.setPresetConfig(true);
       } else {
         props.setPresetConfig(false);
@@ -315,16 +317,12 @@ function Config(props) {
                 </Box>
             </LightTooltip>
             {DiscreteBatchSizeSlider(props)}
-                </Grid>
+            </Grid>
                 <Grid item xs={6}>
-                            <LightTooltip title="Reduces communication bottlenecks by reducing precision." followCursor>
-                <Box>
                     <Typography variant="subtitle1" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
-                        Compression
+                        GPUs
                     </Typography>
-                </Box>
-            </LightTooltip>
-            {DiscreteCompressionSlider(props)}
+                    {DeviceSlider(props)}
                 </Grid>
             </Grid>
             {Options(props)}
@@ -344,8 +342,8 @@ function StartTrain(props) {
         props.state.flows.train_flow.vars['invite_link'] = props.inviteText;
         props.state.flows.train_flow.vars['mixed_precision'] = props.mixedPrecision;
         props.state.flows.train_flow.vars['power_sgd'] = props.powerSGD;
-        props.state.flows.train_flow.vars['compression_state'] = props.compressionState;
-        props.state.flows.train_flow.vars['overlap_communication'] = props.overlapCommunication;
+        props.state.flows.train_flow.vars['devices'] = props.deviceState;
+        props.state.flows.train_flow.vars['optimize_communication'] = props.optimizeCommunication;
         props.state.flows.train_flow.vars['optimize_memory'] = props.optimizeMemory;
         props.state.flows.train_flow.vars['batch_size'] = props.batchSize;
         props.apiClient.setState(props.state);
@@ -359,9 +357,8 @@ function StartTrain(props) {
         }
 
         function logs(state){
-            console.log(state.flows.train_flow.vars['stop_training']);
             if (!state.flows.train_flow.vars['stop_training']) {
-                var logs = state.flows.train_flow.works.train.vars['logs'];
+                var logs = state.flows.train_flow.vars['logs'];
                 props.setLogState(logs);
                 sleep(500).then(logs_fn);
             }
@@ -436,11 +433,12 @@ export default function Train(props){
   const [startTraining, setStartTraining] = React.useState(false)
   const [stopTraining, setStopTraining] = React.useState(false)
   const [inviteText, setInviteText] = React.useState('')
-  const [compressionState, setCompressionState] = React.useState('Adaptive')
+  const [deviceState, setDeviceState] = React.useState(1)
+  const [devices, setDevices] = React.useState(1)
   const [batchSize, setBatchSize] = React.useState(1024)
   const [mixedPrecision, setMixedPrecision] = React.useState(false)
   const [powerSGD, setPowerSGD] = React.useState(false)
-  const [overlapCommunication, setOverlapCommunication] = React.useState(false)
+  const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)
   const [optimizeMemory, setOptimizeMemory] = React.useState(false)
 
 
@@ -471,9 +469,9 @@ export default function Train(props){
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           Join our collaborative training run, using Lightning Flash to train a translation model!
         </Typography>
-        {!startTraining ? Setup({memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
-        {!startTraining ? Config({enableTrainState, inviteText, setInviteText, compressionState, setCompressionState, mixedPrecision, setMixedPrecision, powerSGD, setPowerSGD, setPresetConfig, presetConfig, overlapCommunication, setOverlapCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
-        {!startTraining ? StartTrain({enableTrainState, inviteText, compressionState, mixedPrecision, powerSGD, overlapCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
+        {!startTraining ? Setup({devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
+        {!startTraining ? Config({enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, mixedPrecision, setMixedPrecision, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
+        {!startTraining ? StartTrain({enableTrainState, inviteText, devices, setDevices, deviceState, mixedPrecision, powerSGD, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
         {startTraining ? StopTrain({stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}
       </Container>
   </React.Fragment>
