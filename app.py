@@ -31,10 +31,12 @@ class CheckEnvironmentWork(LightningWork):
         self.linux = setup.check_linux()
         self.cuda, self.devices = setup.check_cuda_available()
         self.internet = setup.sufficient_internet()
-        self.python = setup.check_python_environment()
-        self.memory = setup.check_memory()
+        self.python = setup.suitable_python_environment()
+        self.memory = setup.sufficient_memory()
         self.bandwidth = str(setup.bandwidth()) + "GB/s"
-        self.current_memory = str(setup.cuda_memory()) + "GiB"
+        self.current_memory = (
+            "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
+        )
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         self.complete = True
@@ -110,6 +112,7 @@ class SetupFlow(LightningFlow):
 
     def run(self):
         if self.start:
+            # todo: this keeps getting called. start is always true even if set false.
             self.environment_check.run()
             self.start = False
 
