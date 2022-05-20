@@ -14,8 +14,8 @@ class CollaborativeLightningScript(PopenPythonScript):
         self.logs = ''
 
     def run(self,
+            device: int,
             mixed_precision: bool,
-            compression: str,
             power_sgd: bool,
             overlap_communication: bool,
             optimize_memory: bool,
@@ -23,13 +23,11 @@ class CollaborativeLightningScript(PopenPythonScript):
             ) -> None:
         if mixed_precision:
             self.script_args += ['--mixed_precision']
-        if compression:
-            self.script_args += [f'--compression={compression}']
         if overlap_communication:
             self.script_args += ['--overlap_communication']
         if optimize_memory:
             self.script_args += ['--optimize_memory']
-        self.script_args +=[f'--batch_size={batch_size}']
+        self.script_args += [f'--batch_size={batch_size}', f'--device={device}']
         return super().run()
 
     def _run_with_subprocess_popen(self) -> None:

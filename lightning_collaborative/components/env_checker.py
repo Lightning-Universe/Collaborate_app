@@ -22,7 +22,10 @@ class EnvironmentChecker:
         except:
             return False
         import torch
-        return torch.cuda.is_available()
+        devices = 8
+        if torch.cuda.is_available():
+            devices = torch.cuda.device_count()
+        return torch.cuda.is_available(), devices
 
     def sufficient_internet(self):
         return True
