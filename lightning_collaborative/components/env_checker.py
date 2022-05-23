@@ -78,7 +78,18 @@ class EnvironmentChecker:
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
 
     def bandwidth(self):
-        return 1.5
+        import speedtest
+
+        s = speedtest.Speedtest()
+        s.get_servers([])
+        s.get_best_server()
+        s.download(threads=None)
+        s.upload(threads=None)
+        s.results.share()
+        d = s.results.dict()
+        upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
+        download = d["download"] / 1024 / 1024 / 1024
+        return min(upload, download)
 
     def cuda_memory(self) -> List[float]:
         if not self.check_cuda_available():

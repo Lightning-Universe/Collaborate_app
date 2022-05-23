@@ -1,4 +1,5 @@
 torch
 hivemind
 lightning
+speedtest-cli
 tensorboard
