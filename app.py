@@ -7,8 +7,7 @@ from lightning import LightningApp, LightningFlow, LightningWork
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.front_end import ReactWebFrontend
-from lightning_collaborative.components.script import \
-    CollaborativeLightningScript
+from lightning_collaborative.components.script import CollaborativeLightningScript
 from lightning_collaborative.components.tensorboard import TensorboardWork
 
 GLOBAL_RUN_LINK = "LIT"

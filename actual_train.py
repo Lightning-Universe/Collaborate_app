@@ -10,8 +10,11 @@ import hivemind
 from flash.core.data.utils import download_data
 from flash.text import TextClassificationData, TextClassifier
 from flash.text.classification.collate import TextClassificationCollate
-from hivemind import (Float16Compression, SizeAdaptiveCompression,
-                      Uniform8BitQuantization)
+from hivemind import (
+    Float16Compression,
+    SizeAdaptiveCompression,
+    Uniform8BitQuantization,
+)
 from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
 from pytorch_lightning import Callback
 from pytorch_lightning.loggers import WandbLogger
