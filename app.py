@@ -8,6 +8,9 @@ from lightning import LightningApp, LightningFlow, LightningWork
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.front_end import ReactWebFrontend
 from lightning_collaborative.components.script import CollaborativeLightningScript
+from lightning_collaborative.components.tensorboard import TensorboardWork
+
+GLOBAL_RUN_LINK = "LIT"
 
 
 class CheckEnvironmentWork(LightningWork):
@@ -52,15 +55,16 @@ class TrainFlow(LightningFlow):
         super().__init__()
         self.invite_link = None
         self.devices = None
-        self.mixed_precision = None
         self.power_sgd = None
         self.optimize_memory = None
         self.optimize_communication = None
+        self.wandb = None
         self.devices = None
         self.batch_size = None
         self.start_training = False
         self.stop_training = False
         self.logs = None
+        self.wandb_url = ""
 
     @property
     def train_work_logs(self) -> Optional[str]:
@@ -82,7 +86,6 @@ class TrainFlow(LightningFlow):
                 )
             getattr(self, f"work_{x}").run(
                 device=x,
-                mixed_precision=self.mixed_precision,
                 power_sgd=self.power_sgd,
                 optimize_memory=self.optimize_memory,
                 overlap_communication=self.optimize_communication,
@@ -100,6 +103,8 @@ class TrainFlow(LightningFlow):
             self.logs = self.train_work_logs
         if self.start_training and not self.stop_training:
             self._start_train_works()
+        if self.invite_link == GLOBAL_RUN_LINK:
+            self.wandb_url = "https://wandb.ai/seannaren/taming-collab/runs/2oswusf1?workspace=user-seannaren"
             self.start_training = False
         if self.stop_training:
             self.start_training = False
@@ -127,21 +132,39 @@ class ReactUI(LightningFlow):
         return ReactWebFrontend(str(Path(__file__).parent / "ui/build"))
 
 
+class TensorboardFlow(LightningFlow):
+    def __init__(self, port: int):
+        super().__init__()
+        self.tensorboard = TensorboardWork(port)
+        self.running = False
+
+    def run(self):
+        if not self.running:
+            self.tensorboard.run()
+            self.running = True
+
+
 class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
-        self.port = 3000
         self.react_ui = ReactUI()
         self.setup_flow = SetupFlow()
         self.train_flow = TrainFlow()
+        self.tb_port = 6001
+        self.tensorboard_flow = TensorboardFlow(port=self.tb_port)
 
     def run(self):
+        self.tensorboard_flow.run()
         self.react_ui.run()
         self.train_flow.run()
         self.setup_flow.run()
 
     def configure_layout(self):
-        return [{"name": "train", "content": self.react_ui}]
+        return [
+            {"name": "Train", "content": self.react_ui},
+            {"name": "Local Monitor", "content": f"http://localhost:{self.tb_port}"},
+            {"name": "Global Monitor", "content": self.train_flow.wandb_url},
+        ]
 
 
 app = LightningApp(root=RootFlow())

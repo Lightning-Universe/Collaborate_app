@@ -18,14 +18,11 @@ class CollaborativeLightningScript(PopenPythonScript):
     def run(
         self,
         device: int,
-        mixed_precision: bool,
         power_sgd: bool,
         overlap_communication: bool,
         optimize_memory: bool,
         batch_size: int,
     ) -> None:
-        if mixed_precision:
-            self.script_args += ["--mixed_precision"]
         if overlap_communication:
             self.script_args += ["--overlap_communication"]
         if optimize_memory:
