@@ -26,7 +26,7 @@ class EnvironmentChecker:
     def _check_package_installed(self, package):
         try:
             importlib.import_module(package)
-        except:  # type: ignore [E722]
+        except:  # noqa: E722
             return False
         return True
 
@@ -48,7 +48,7 @@ class EnvironmentChecker:
     def _check_pip_installed(self):
         try:
             importlib.import_module("pip")
-        except:  # type: ignore [E722]
+        except:  # noqa: E722
             return False
 
     def setup_python_environment(self):
