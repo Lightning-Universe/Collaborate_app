@@ -31,17 +31,17 @@ class EnvironmentChecker:
             return False
         return True
 
-    def check_cuda_available(self):
+    def check_cuda_devices_available(self):
         # todo: we assume the user has torch installed, this could not be the case
         # maybe be a torch check instead of CUDA check
         if not self._check_package_installed("torch"):
-            return False
+            return 0
         import torch
 
-        devices = 8
-        if torch.cuda.is_available():
-            devices = torch.cuda.device_count()
-        return torch.cuda.is_available(), devices
+        if not torch.cuda.is_available():
+            return 0
+
+        return torch.cuda.device_count()
 
     def sufficient_internet(self):
         return True
@@ -81,7 +81,7 @@ class EnvironmentChecker:
         return 1.5
 
     def cuda_memory(self) -> List[float]:
-        if not self.check_cuda_available():
+        if not self.check_cuda_devices_available():
             return [0.0]
         # does not work on Jetsons... (don't have nvidia-smi)
         try:
@@ -113,17 +113,17 @@ class EnvironmentChecker:
         if not self.successful():
             warning += "Your machine does not support the minimal requirements (Requires Linux and Python 3)."
         if self.successful():
+            if not self.check_cuda_devices_available():
+                warning += (
+                    "\nTorch with CUDA is not available on this machine or cannot see any devices. "
+                    "Make sure you install Torch with CUDA: https://pytorch.org/."
+                )
+            elif not self.sufficient_memory():
+                warning += (
+                    f"\nThere is less CUDA memory in some cards than recommended. "
+                    f"Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB"
+                )
             if self.bandwidth() <= self.minimum_bandwidth_gb:
-                if self.check_cuda_available():
-                    warning += (
-                        "\nTorch with CUDA is not available on this machine. "
-                        "Make sure you install Torch with CUDA: https://pytorch.org/."
-                    )
-                elif not self.sufficient_memory():
-                    warning += (
-                        f"\nThere is less CUDA memory in some cards than recommended. "
-                        f"Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB"
-                    )
                 warning += (
                     "\nThe internet bandwidth is less than recommended. "
                     "You may see a lot of out of sync/timeout "

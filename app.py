@@ -38,7 +38,8 @@ class CheckEnvironmentWork(LightningWork):
             self.python = True
         else:
             self.python = setup.setup_python_environment()
-        self.cuda, self.devices = setup.check_cuda_available()
+        self.devices = setup.check_cuda_devices_available()
+        self.cuda = self.devices > 0
         self.internet = setup.sufficient_internet()
         self.memory = setup.sufficient_memory()
         self.bandwidth = str(setup.bandwidth()) + "GB/s"
