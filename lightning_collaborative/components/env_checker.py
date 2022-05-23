@@ -1,7 +1,9 @@
 import importlib
 import operator
+import os
 import platform
 import subprocess
+import time
 from typing import List
 from xml.etree import ElementTree
 
@@ -10,10 +12,10 @@ from packaging.version import Version
 
 class EnvironmentChecker:
     def __init__(
-        self,
-        debug: bool = False,
-        minimum_bandwidth_gb: int = 2,
-        min_cuda_memory_gb: int = 8,
+            self,
+            debug: bool = False,
+            minimum_bandwidth_gb: int = 2,
+            min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
@@ -22,12 +24,17 @@ class EnvironmentChecker:
     def check_linux(self):
         return platform.system() == "Linux"
 
+    def _check_package_installed(self, package):
+        try:
+            importlib.import_module(package)
+        except:
+            return False
+        return True
+
     def check_cuda_available(self):
         # todo: we assume the user has torch installed, this could not be the case
         # maybe be a torch check instead of CUDA check
-        try:
-            importlib.import_module("torch")
-        except:
+        if not self._check_package_installed('torch'):
             return False
         import torch
 
@@ -39,8 +46,27 @@ class EnvironmentChecker:
     def sufficient_internet(self):
         return True
 
-    def suitable_python_environment(self):
-        return operator.ge(Version(platform.python_version()), Version("3.0.0"))
+    def _check_pip_installed(self):
+        try:
+            importlib.import_module("pip")
+        except:
+            return False
+
+    def setup_python_environment(self):
+        if not operator.ge(Version(platform.python_version()), Version("3.0.0")) or not self._check_package_installed(
+                'pip'):
+            return False
+        exit_code = os.system('pip install -r requirements.txt')
+        success = exit_code == 0
+        if not success:
+            return False
+
+        # check pytorch-lightning has been installed with Collaborative support, else re-install
+        import pytorch_lightning
+        if not operator.ge(Version(pytorch_lightning.__version__), Version("1.7.0.dev0")):
+            print("Installing pytorch-lightning master.")
+            exit_code = os.system('pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip')
+        return exit_code == 0
 
     def sufficient_memory(self):
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
@@ -102,4 +128,4 @@ class EnvironmentChecker:
     def successful(self):
         if self.debug:
             return True
-        return self.suitable_python_environment() and self.check_linux()
+        return self.setup_python_environment() and self.check_linux()

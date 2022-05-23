@@ -32,6 +32,9 @@ const ColorLoadingButton = styled(LoadingButton)(({ theme }) => ({
   '&:hover': {
     backgroundColor: "#614eb9",
   },
+  '&:disabled': {
+    backgroundColor: "#614eb9",
+  },
 }));
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: 'transparent',
@@ -224,7 +227,7 @@ function Setup(props) {
             <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1, mb:1 }}>
                 Ensure that your environment and internet connection are ready for collaborative training.
             </Typography>
-            <ColorLoadingButton onClick={handleSetupClick} loading={!props.enableTrainState && props.startInstallState} disabled={props.enableTrainState} variant="contained" sx={{ mb:1, width:'100%' }}>{!props.enableTrainState ? "PRE-CHECK & INSTALL" : "COMPLETE"}</ColorLoadingButton>
+            <ColorLoadingButton  sx={{mb:1, width:'100%', '& .MuiLoadingButton-loadingIndicator': { color: '#48e38e',},}} onClick={handleSetupClick} loading={!props.enableTrainState && props.startInstallState} disabled={props.enableTrainState} variant="contained">{!props.enableTrainState ? "PRE-CHECK & INSTALL" : "COMPLETE"}</ColorLoadingButton>
             <Box sx={{ width: '100%' }}>
                 <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
                     <Grid item xs={4}>
@@ -242,7 +245,7 @@ function Setup(props) {
                     <Grid item xs={4}>
                       <Grid container direction="row" alignItems="center">
                         {CheckButton(props.startInstallState, props.completePython)}
-                        <Item>Python Environment</Item>
+                        <Item>Install Requirements</Item>
                       </Grid>
                     </Grid>
                     <Grid item xs={4}>

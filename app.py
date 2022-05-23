@@ -12,7 +12,7 @@ from lightning_collaborative.components.script import CollaborativeLightningScri
 
 class CheckEnvironmentWork(LightningWork):
     def __init__(self, debug: bool = False):
-        super().__init__(run_once=False)
+        super().__init__()
         self.linux = None
         self.cuda = None
         self.internet = None
@@ -29,9 +29,14 @@ class CheckEnvironmentWork(LightningWork):
     def run(self):
         setup = EnvironmentChecker(debug=self.debug)
         self.linux = setup.check_linux()
+
+        # skip requirements install if in debug mode
+        if self.debug:
+            self.python = True
+        else:
+            self.python = setup.setup_python_environment()
         self.cuda, self.devices = setup.check_cuda_available()
         self.internet = setup.sufficient_internet()
-        self.python = setup.suitable_python_environment()
         self.memory = setup.sufficient_memory()
         self.bandwidth = str(setup.bandwidth()) + "GB/s"
         self.current_memory = (
