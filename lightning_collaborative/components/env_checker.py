@@ -68,7 +68,7 @@ class EnvironmentChecker:
         if not operator.ge(
             Version(pytorch_lightning.__version__), Version("1.7.0.dev0")
         ):
-            print("Installing pytorch-lightning master.")
+            print("Installing pytorch-lightning main.")
             exit_code = os.system(
                 "pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip"
             )
