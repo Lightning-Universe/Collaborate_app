@@ -3,7 +3,6 @@ import operator
 import os
 import platform
 import subprocess
-import time
 from typing import List
 from xml.etree import ElementTree
 
@@ -27,7 +26,7 @@ class EnvironmentChecker:
     def _check_package_installed(self, package):
         try:
             importlib.import_module(package)
-        except:
+        except:  # noqa: E722
             return False
         return True
 
@@ -49,7 +48,7 @@ class EnvironmentChecker:
     def _check_pip_installed(self):
         try:
             importlib.import_module("pip")
-        except:
+        except:  # noqa: E722
             return False
 
     def setup_python_environment(self):
@@ -68,7 +67,7 @@ class EnvironmentChecker:
         if not operator.ge(
             Version(pytorch_lightning.__version__), Version("1.7.0.dev0")
         ):
-            print("Installing pytorch-lightning master.")
+            print("Installing pytorch-lightning main.")
             exit_code = os.system(
                 "pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip"
             )
