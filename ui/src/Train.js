@@ -57,9 +57,6 @@ const LightTooltip = styled(({ className, ...props }) => (
 }));
 
 function Options(props){
-    var mixedPrecisionChange = (e) => {
-      props.setMixedPrecision(e.target.checked)
-    };
     var powerSGDChange = (e) => {
       props.setPowerSGD(e.target.checked)
     };
@@ -69,14 +66,18 @@ function Options(props){
     var optimizeMemory = (e) => {
       props.setOptimizeMemory(e.target.checked)
     };
+    var wandbEnable = (e) => {
+      props.setWandb(e.target.checked)
+    };
+
     if (props.presetConfig) {
         return (
         <Box sx={{ width: "100%", display:'flex'}}>
             <FormGroup row={true}>
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Mixed Precision</Typography>} />
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
                 <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
                 <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={false} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Enable Wandb</Typography>} />
             </FormGroup>
         </Box>
         );
@@ -84,10 +85,10 @@ function Options(props){
     return (
     <Box sx={{ width: "100%", display:'flex', mb: 2, mt:1}}>
         <FormGroup row={true}>
-            <FormControlLabel labelPlacement="start" control={<Switch onChange={mixedPrecisionChange}size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Mixed Precision</Typography>} />
-            <FormControlLabel labelPlacement="start" control={<Switch onChange={powerSGDChange} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
             <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeCommunication} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
             <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeMemory} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
+            <FormControlLabel labelPlacement="start" control={<Switch onChange={powerSGDChange} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
+            <FormControlLabel labelPlacement="start" control={<Switch onChange={wandbEnable} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Enable WandB</Typography>} />
         </FormGroup>
     </Box>
     );
@@ -269,6 +270,36 @@ function Setup(props) {
     </React.Fragment>
   );
 }
+
+function refreshTrainingState(props){
+       console.log("REFRESHING STATE")
+       function check(state){
+            if (state.flows.train_flow.vars['start_training'] && !state.flows.train_flow.vars['stop_training']){
+                props.setStartTraining(true);
+                props.setStopTraining(false);
+                props.setEnableTrainState(true);
+
+                function logs_fn() {
+                    props.apiClient.getState().then(logs);
+                }
+
+                var sleep = (milliseconds) => {
+                    return new Promise(resolve => setTimeout(resolve, milliseconds))
+                }
+
+                function logs(state){
+                    if (!state.flows.train_flow.vars['stop_training']) {
+                        var logs = state.flows.train_flow.vars['logs'];
+                        props.setLogState(logs);
+                        sleep(500).then(logs_fn);
+                    }
+                }
+                props.apiClient.getState().then(logs)
+            }
+       }
+       props.apiClient.getState().then(check);
+}
+
 function Config(props) {
   var onTextChange = (e) => {
       props.setInviteText(e.target.value);
@@ -277,8 +308,8 @@ function Config(props) {
         if (props.presetConfig){
             return;
         }
-        props.setMixedPrecision(true);
         props.setPowerSGD(true);
+        props.setWandb(false);
         props.setBatchSize(8192);
         props.setOptimizeMemory(true);
         props.setOptimizeCommunication(true);
@@ -337,17 +368,17 @@ function StartTrain(props) {
   var trainClick = (event) => {
      if (props.startTraining) {
           return;
-        }
+     }
         props.setStartTraining(true);
         props.setStopTraining(false);
 
         props.state.flows.train_flow.vars['start_training'] = true;
         props.state.flows.train_flow.vars['invite_link'] = props.inviteText;
-        props.state.flows.train_flow.vars['mixed_precision'] = props.mixedPrecision;
         props.state.flows.train_flow.vars['power_sgd'] = props.powerSGD;
         props.state.flows.train_flow.vars['devices'] = props.deviceState;
         props.state.flows.train_flow.vars['optimize_communication'] = props.optimizeCommunication;
         props.state.flows.train_flow.vars['optimize_memory'] = props.optimizeMemory;
+        props.state.flows.train_flow.vars['wandb'] = props.wandb;
         props.state.flows.train_flow.vars['batch_size'] = props.batchSize;
         props.apiClient.setState(props.state);
 
@@ -401,7 +432,6 @@ function StopTrain(props) {
             state.flows.train_flow.vars['start_training'] = false;
             state.flows.train_flow.vars['stop_training'] = true;
             props.apiClient.setState(state);
-            console.log(props.apiClient.getState().then(function temp(state) {console.log(state)}))
         }
 
         props.apiClient.getState().then(stop_training)
@@ -439,8 +469,8 @@ export default function Train(props){
   const [deviceState, setDeviceState] = React.useState(1)
   const [devices, setDevices] = React.useState(1)
   const [batchSize, setBatchSize] = React.useState(1024)
-  const [mixedPrecision, setMixedPrecision] = React.useState(false)
   const [powerSGD, setPowerSGD] = React.useState(false)
+  const [wandb, setWandb] = React.useState(false)
   const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)
   const [optimizeMemory, setOptimizeMemory] = React.useState(false)
 
@@ -463,6 +493,11 @@ export default function Train(props){
   var logState = props.logState;
   var setLogState = props.setLogState;
 
+  React.useEffect(() => {
+      refreshTrainingState({setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState});
+  }, []);
+
+
   return (
   <React.Fragment>
       <Container disableGutters sx={{ display: 'flex', flexDirection: 'column', width:'50%'}}>
@@ -473,8 +508,8 @@ export default function Train(props){
           Join our collaborative training run, using Lightning Flash to train a translation model!
         </Typography>
         {!startTraining ? Setup({devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
-        {!startTraining ? Config({enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, mixedPrecision, setMixedPrecision, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
-        {!startTraining ? StartTrain({enableTrainState, inviteText, devices, setDevices, deviceState, mixedPrecision, powerSGD, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
+        {!startTraining ? Config({enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, wandb, setWandb, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
+        {!startTraining ? StartTrain({enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, wandb, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
         {startTraining ? StopTrain({stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}
       </Container>
   </React.Fragment>

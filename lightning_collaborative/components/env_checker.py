@@ -3,7 +3,6 @@ import operator
 import os
 import platform
 import subprocess
-import time
 from typing import List
 from xml.etree import ElementTree
 
@@ -27,21 +26,21 @@ class EnvironmentChecker:
     def _check_package_installed(self, package):
         try:
             importlib.import_module(package)
-        except:
+        except:  # noqa: E722
             return False
         return True
 
-    def check_cuda_available(self):
+    def check_cuda_devices_available(self):
         # todo: we assume the user has torch installed, this could not be the case
         # maybe be a torch check instead of CUDA check
         if not self._check_package_installed("torch"):
-            return False
+            return 0
         import torch
 
-        devices = 8
-        if torch.cuda.is_available():
-            devices = torch.cuda.device_count()
-        return torch.cuda.is_available(), devices
+        if not torch.cuda.is_available():
+            return 0
+
+        return torch.cuda.device_count()
 
     def sufficient_internet(self):
         return True
@@ -49,7 +48,7 @@ class EnvironmentChecker:
     def _check_pip_installed(self):
         try:
             importlib.import_module("pip")
-        except:
+        except:  # noqa: E722
             return False
 
     def setup_python_environment(self):
@@ -68,7 +67,7 @@ class EnvironmentChecker:
         if not operator.ge(
             Version(pytorch_lightning.__version__), Version("1.7.0.dev0")
         ):
-            print("Installing pytorch-lightning master.")
+            print("Installing pytorch-lightning main.")
             exit_code = os.system(
                 "pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip"
             )
@@ -92,7 +91,7 @@ class EnvironmentChecker:
         return min(upload, download)
 
     def cuda_memory(self) -> List[float]:
-        if not self.check_cuda_available():
+        if not self.check_cuda_devices_available():
             return [0.0]
         # does not work on Jetsons... (don't have nvidia-smi)
         try:
@@ -124,17 +123,17 @@ class EnvironmentChecker:
         if not self.successful():
             warning += "Your machine does not support the minimal requirements (Requires Linux and Python 3)."
         if self.successful():
+            if not self.check_cuda_devices_available():
+                warning += (
+                    "\nTorch with CUDA is not available on this machine or cannot see any devices. "
+                    "Make sure you install Torch with CUDA: https://pytorch.org/."
+                )
+            elif not self.sufficient_memory():
+                warning += (
+                    f"\nThere is less CUDA memory in some cards than recommended. "
+                    f"Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB"
+                )
             if self.bandwidth() <= self.minimum_bandwidth_gb:
-                if self.check_cuda_available():
-                    warning += (
-                        "\nTorch with CUDA is not available on this machine. "
-                        "Make sure you install Torch with CUDA: https://pytorch.org/."
-                    )
-                elif not self.sufficient_memory():
-                    warning += (
-                        f"\nThere is less CUDA memory in some cards than recommended. "
-                        f"Recommend minimum CUDA memory: {self.min_cuda_memory_gb}GiB"
-                    )
                 warning += (
                     "\nThe internet bandwidth is less than recommended. "
                     "You may see a lot of out of sync/timeout "

@@ -29,8 +29,8 @@ class EpochTimes(Callback):
 
     def on_train_batch_end(
         self,
-        trainer: "pl.Trainer",
-        pl_module: "pl.LightningModule",
+        trainer,
+        pl_module,
         outputs,
         batch: Any,
         batch_idx: int,
