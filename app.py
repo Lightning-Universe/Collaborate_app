@@ -130,7 +130,7 @@ class TrainFlow(LightningFlow):
     def _select_host_port(self):
         if self.invite_link:
             pieces = self.invite_link.split("?")
-            [host, port, config] = [pieces[1], pieces[2], pieces[3]]
+            [host, port] = [pieces[1], pieces[2]]
             self.host = host.replace("host=", "")
             self.port = int(port.replace("port=", ""))
         else:
@@ -188,8 +188,8 @@ class RootFlow(LightningFlow):
         self.tensorboard_flow = TensorboardFlow(host="0.0.0.0", port=self.tb_port)
 
     def run(self):
-        self.tensorboard_flow.run()
         self.react_ui.run()
+        self.tensorboard_flow.run()
         self.train_flow.run()
         self.setup_flow.run()
 
