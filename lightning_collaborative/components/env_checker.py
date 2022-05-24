@@ -13,12 +13,13 @@ class EnvironmentChecker:
     def __init__(
         self,
         debug: bool = False,
-        minimum_bandwidth_gb: int = 2,
+        minimum_bandwidth_gb: int = 1,
         min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
         self.min_cuda_memory_gb = min_cuda_memory_gb
+        self._bandwidth_cache = None
 
     def check_linux(self):
         return platform.system() == "Linux"
@@ -33,6 +34,8 @@ class EnvironmentChecker:
     def check_cuda_devices_available(self):
         # todo: we assume the user has torch installed, this could not be the case
         # maybe be a torch check instead of CUDA check
+        if self.debug:
+            return 8
         if not self._check_package_installed("torch"):
             return 0
         import torch
@@ -77,7 +80,27 @@ class EnvironmentChecker:
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
 
     def bandwidth(self):
-        return 1.5
+        if self.debug:
+            return 1
+        if self._bandwidth_cache is not None:
+            return self._bandwidth_cache
+
+        import speedtest
+
+        s = (
+            speedtest.Speedtest()
+        )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
+        s.get_servers([])
+        s.get_best_server()
+        s.download()
+        s.upload()
+        s.results.share()
+        d = s.results.dict()
+        upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
+        download = d["download"] / 1024 / 1024 / 1024
+        res = min(upload, download)
+        self._bandwidth_cache = res
+        return res
 
     def cuda_memory(self) -> List[float]:
         if not self.check_cuda_devices_available():
