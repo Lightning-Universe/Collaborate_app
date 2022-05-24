@@ -18,7 +18,9 @@ import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-
+import { CopyBlock, dracula } from "react-code-blocks";
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 const ColorButton = styled(Button)(({ theme }) => ({
   color: "#FFFFFF",
   backgroundColor: "#6e58d7",
@@ -26,6 +28,12 @@ const ColorButton = styled(Button)(({ theme }) => ({
     backgroundColor: "#614eb9",
   },
 }));
+const CardContentNoPadding = styled(CardContent)(`
+  padding: 0;
+  &:last-child {
+    padding-bottom: 0;
+  }
+`);
 const ColorLoadingButton = styled(LoadingButton)(({ theme }) => ({
   color: "#FFFFFF",
   backgroundColor: "#6e58d7",
@@ -74,10 +82,10 @@ function Options(props){
         return (
         <Box sx={{ width: "100%", display:'flex'}}>
             <FormGroup row={true}>
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={true} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
-                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={false} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Enable Wandb</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.optimizeCommunication} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.optimizeMemory} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.powerSGD} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
+                <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.wandb} size="small" sx={{color:"#6e58d7"}} />} label={<Typography sx={{ fontSize: 14 }}>Enable Wandb</Typography>} />
             </FormGroup>
         </Box>
         );
@@ -272,9 +280,9 @@ function Setup(props) {
 }
 
 function refreshTrainingState(props){
-       console.log("REFRESHING STATE")
        function check(state){
-            if (state.flows.train_flow.vars['start_training'] && !state.flows.train_flow.vars['stop_training']){
+            console.log(state);
+            if (state.flows.train_flow.vars['running']){
                 props.setStartTraining(true);
                 props.setStopTraining(false);
                 props.setEnableTrainState(true);
@@ -288,31 +296,61 @@ function refreshTrainingState(props){
                 }
 
                 function logs(state){
-                    if (!state.flows.train_flow.vars['stop_training']) {
+                    if (state.flows.train_flow.vars['running']) {
+                        var shareInviteLink = state.flows.train_flow.vars['share_invite_link'];
+                        props.setShareInviteLink(shareInviteLink);
                         var logs = state.flows.train_flow.vars['logs'];
                         props.setLogState(logs);
                         sleep(500).then(logs_fn);
                     }
                 }
-                props.apiClient.getState().then(logs)
+                props.apiClient.getState().then(logs);
             }
        }
        props.apiClient.getState().then(check);
 }
 
+function validLink(text) {
+    // collaborative?host=51.6.13.164?port=9330?config={'powerSGD': False, 'optimizeMemory': True, 'optimizeCommunication': False, 'batchSize': 1024}
+    var pieces = text.split('?');
+
+    if (pieces.length !== 4) {
+        return false;
+    }
+    var [host,port,config] = [pieces[1], pieces[2], pieces[3]];
+
+    function checkString(string, query){
+        return (string.search(query) === 0);
+    }
+    if (checkString(host, "host=") && checkString(port, "port=") && checkString(config, "config=")){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function parseLink(text) {
+    var pieces = text.split('?');
+    var config = pieces[3];
+	var config = config.replace('config=', '');
+	var config = JSON.parse(config);
+	return config
+}
+
 function Config(props) {
   var onTextChange = (e) => {
-      props.setInviteText(e.target.value);
-      // todo: this should be the works responsibility somehow
-      if (e.target.value === 'LIT'){
+      if (validLink(e.target.value)){
+        props.setInviteText(e.target.value);
         if (props.presetConfig){
             return;
         }
-        props.setPowerSGD(true);
-        props.setWandb(false);
-        props.setBatchSize(8192);
-        props.setOptimizeMemory(true);
-        props.setOptimizeCommunication(true);
+        var config = parseLink(e.target.value);
+        console.log("YO", config);
+        props.setPowerSGD(config.powerSGD);
+        props.setWandb(config.wandb);
+        props.setBatchSize(config.batchSize);
+        props.setOptimizeMemory(config.optimizeMemory);
+        props.setOptimizeCommunication(config.optimizeCommunication);
         props.setPresetConfig(true);
       } else {
         props.setPresetConfig(false);
@@ -333,12 +371,11 @@ function Config(props) {
               id="outlined-textarea"
               label="Joining a collaborative training run? Paste your invite here."
               placeholder="collaborative-..."
-              multiline
               onChange={onTextChange}
               sx ={{mb:2}}
             />
             {props.presetConfig && <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1, mb:2}}>
-                Joining the Global Lightning Collaborative run, we'll select the configuration for you.
+                Joining a Lightning Collaborative run, we'll select the configuration for you.
             </Typography>
             }
             <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
@@ -394,6 +431,8 @@ function StartTrain(props) {
             if (!state.flows.train_flow.vars['stop_training']) {
                 var logs = state.flows.train_flow.vars['logs'];
                 props.setLogState(logs);
+                var shareInviteLink = state.flows.train_flow.vars['share_invite_link'];
+                props.setShareInviteLink(shareInviteLink);
                 sleep(500).then(logs_fn);
             }
         }
@@ -433,10 +472,7 @@ function StopTrain(props) {
             state.flows.train_flow.vars['stop_training'] = true;
             props.apiClient.setState(state);
         }
-
-        props.apiClient.getState().then(stop_training)
-
-
+        props.apiClient.getState().then(stop_training);
   }
   return (
     <React.Fragment>
@@ -447,13 +483,41 @@ function StopTrain(props) {
                         TRAIN
                     </Typography>
                     <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
-                        Training started. Logs should appear on the left soon.
+                        Training has started. Logs should appear on the left soon.
                     </Typography>
                 </Grid>
                 <Grid item xs={6}  align="center">
                     <ColorButton onClick={trainClick} disabled={!props.enableTrainState} variant="contained" sx={{ mt:1, display: 'flex', width:'50%'}}>STOP TRAINING</ColorButton>
                 </Grid>
             </Grid>
+            <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
+                You can see your local stored metrics in the LOCAL MONITOR tab.
+            </Typography>
+            <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
+                If joining the Lightning Collaborative Run, You can see the global metrics on W&B in the GLOBAL MONITOR tab.
+            </Typography>
+        </Paper>
+        <Paper sx={{ p: 2, display: 'flex', mb:0.5, mt:2, flexDirection: 'column', background: "transparent", borderRadius: 2, border: 1, borderColor: "#ffffff44", boxShadow: '0' }}>
+            <Typography variant="h5" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 3 }}>
+                INVITE
+            </Typography>
+            <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1, mb: 1}}>
+                Send this link to others to join your training run.
+            </Typography>
+            <Card sx={{ borderRadius: 2 }}>
+              <CardContentNoPadding>
+            <Box sx={{ overflowY:'auto', width:'100%', pb:0, backgroundColor:'#282a36' }}>
+                  <CopyBlock
+                    text={props.shareInviteLink}
+                    language={"bash"}
+                    showLineNumbers={false}
+                    wrapLines
+                    theme={dracula}
+                    customStyle={{ paddingLeft: 20 }}
+                  />
+            </Box>
+            </CardContentNoPadding>
+            </Card>
         </Paper>
     </React.Fragment>
   );
@@ -466,6 +530,7 @@ export default function Train(props){
   const [startTraining, setStartTraining] = React.useState(false)
   const [stopTraining, setStopTraining] = React.useState(false)
   const [inviteText, setInviteText] = React.useState('')
+  const [shareInviteLink, setShareInviteLink] = React.useState('')
   const [deviceState, setDeviceState] = React.useState(1)
   const [devices, setDevices] = React.useState(1)
   const [batchSize, setBatchSize] = React.useState(1024)
@@ -494,9 +559,8 @@ export default function Train(props){
   var setLogState = props.setLogState;
 
   React.useEffect(() => {
-      refreshTrainingState({setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState});
+      refreshTrainingState({setShareInviteLink, setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState});
   }, []);
-
 
   return (
   <React.Fragment>
@@ -505,12 +569,12 @@ export default function Train(props){
           Lightning Collaborative
         </Typography>
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
-          Join our collaborative training run, using Lightning Flash to train a translation model!
+          Train collaboratively, using Lightning Flash to train a translation model.
         </Typography>
-        {!startTraining ? Setup({devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
-        {!startTraining ? Config({enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, wandb, setWandb, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
-        {!startTraining ? StartTrain({enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, wandb, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
-        {startTraining ? StopTrain({stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}
+        {!startTraining ? Setup({shareInviteLink, setShareInviteLink, devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
+        {!startTraining ? Config({shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, wandb, setWandb, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
+        {!startTraining ? StartTrain({shareInviteLink, setShareInviteLink, enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, wandb, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
+        {startTraining ? StopTrain({shareInviteLink, setShareInviteLink, stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}
       </Container>
   </React.Fragment>
   );
