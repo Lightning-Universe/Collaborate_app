@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 from pathlib import Path
@@ -55,6 +56,7 @@ class TrainFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         self.invite_link = None
+        self.share_invite_link = None
         self.devices = None
         self.power_sgd = None
         self.optimize_memory = None
@@ -64,7 +66,10 @@ class TrainFlow(LightningFlow):
         self.batch_size = None
         self.start_training = False
         self.stop_training = False
+        self.running = False
         self.logs = None
+        self.host = None
+        self.port = None
         self.wandb_url = ""
 
     @property
@@ -87,6 +92,9 @@ class TrainFlow(LightningFlow):
                 )
             getattr(self, f"work_{x}").run(
                 device=x,
+                server=not self.invite_link,
+                host=self.host,
+                port=self.port,
                 power_sgd=self.power_sgd,
                 optimize_memory=self.optimize_memory,
                 overlap_communication=self.optimize_communication,
@@ -103,14 +111,37 @@ class TrainFlow(LightningFlow):
             # todo: we only look at the logs from the first work
             self.logs = self.train_work_logs
         if self.start_training and not self.stop_training:
+            # todo: wandb global not supported yet
+            # if self.invite_link == GLOBAL_RUN_LINK:
+            #     self.wandb_url = ""
+            self._select_host_port()
+            self.share_invite_link = self._generate_link() if not self.invite_link else self.invite_link
             self._start_train_works()
-        if self.invite_link == GLOBAL_RUN_LINK:
-            self.wandb_url = "https://wandb.ai/seannaren/taming-collab/runs/2oswusf1?workspace=user-seannaren"
+            self.running = True
             self.start_training = False
         if self.stop_training:
+            self.running = False
             self.start_training = False
             self.stop_training = False
             self.kill_train_works()
+
+    def _select_host_port(self):
+        if self.invite_link:
+            pieces = self.invite_link.split('?')
+            [host, port, config] = [pieces[1], pieces[2], pieces[3]]
+            self.host = host.replace('host=', '')
+            self.port = int(port.replace('port=', ''))
+        else:
+            self.host, self.port = CollaborativeLightningScript.create_peer_endpoint()
+
+    def _generate_link(self):
+        config = dict(
+            powerSGD=self.power_sgd,
+            optimizeMemory=self.optimize_memory,
+            optimizeCommunication=self.optimize_communication,
+            batchSize=self.batch_size
+        )
+        return f"collaborative?host={self.host}?port={self.port}?config={json.dumps(config)}"
 
 
 class SetupFlow(LightningFlow):
@@ -134,9 +165,9 @@ class ReactUI(LightningFlow):
 
 
 class TensorboardFlow(LightningFlow):
-    def __init__(self, port: int):
+    def __init__(self, host:str, port: int):
         super().__init__()
-        self.tensorboard = TensorboardWork(port)
+        self.tensorboard = TensorboardWork(host, port)
         self.running = False
 
     def run(self):
@@ -152,7 +183,7 @@ class RootFlow(LightningFlow):
         self.setup_flow = SetupFlow()
         self.train_flow = TrainFlow()
         self.tb_port = 6001
-        self.tensorboard_flow = TensorboardFlow(port=self.tb_port)
+        self.tensorboard_flow = TensorboardFlow(host="0.0.0.0", port=self.tb_port)
 
     def run(self):
         self.tensorboard_flow.run()
