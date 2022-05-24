@@ -13,7 +13,7 @@ class EnvironmentChecker:
     def __init__(
         self,
         debug: bool = False,
-        minimum_bandwidth_gb: int = 2,
+        minimum_bandwidth_gb: int = 1,
         min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug
@@ -34,6 +34,8 @@ class EnvironmentChecker:
     def check_cuda_devices_available(self):
         # todo: we assume the user has torch installed, this could not be the case
         # maybe be a torch check instead of CUDA check
+        if self.debug:
+            return 8
         if not self._check_package_installed("torch"):
             return 0
         import torch
@@ -78,6 +80,8 @@ class EnvironmentChecker:
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
 
     def bandwidth(self):
+        if self.debug:
+            return 1
         if self._bandwidth_cache is not None:
             return self._bandwidth_cache
 

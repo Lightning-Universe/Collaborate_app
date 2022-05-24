@@ -144,7 +144,6 @@ function DeviceSlider(props) {
         max={props.devices}
         onChange={handleChange}
         sx={{color: "#FFFFFF"}}
-        disabled={props.presetConfig}
       />
     </Box>
   );
@@ -311,7 +310,6 @@ function refreshTrainingState(props){
 }
 
 function validLink(text) {
-    // collaborative?host=51.6.13.164?port=9330?config={'powerSGD': False, 'optimizeMemory': True, 'optimizeCommunication': False, 'batchSize': 1024}
     var pieces = text.split('?');
 
     if (pieces.length !== 4) {
