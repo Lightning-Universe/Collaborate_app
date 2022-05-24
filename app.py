@@ -115,7 +115,9 @@ class TrainFlow(LightningFlow):
             # if self.invite_link == GLOBAL_RUN_LINK:
             #     self.wandb_url = ""
             self._select_host_port()
-            self.share_invite_link = self._generate_link() if not self.invite_link else self.invite_link
+            self.share_invite_link = (
+                self._generate_link() if not self.invite_link else self.invite_link
+            )
             self._start_train_works()
             self.running = True
             self.start_training = False
@@ -127,10 +129,10 @@ class TrainFlow(LightningFlow):
 
     def _select_host_port(self):
         if self.invite_link:
-            pieces = self.invite_link.split('?')
+            pieces = self.invite_link.split("?")
             [host, port, config] = [pieces[1], pieces[2], pieces[3]]
-            self.host = host.replace('host=', '')
-            self.port = int(port.replace('port=', ''))
+            self.host = host.replace("host=", "")
+            self.port = int(port.replace("port=", ""))
         else:
             self.host, self.port = CollaborativeLightningScript.create_peer_endpoint()
 
@@ -139,7 +141,7 @@ class TrainFlow(LightningFlow):
             powerSGD=self.power_sgd,
             optimizeMemory=self.optimize_memory,
             optimizeCommunication=self.optimize_communication,
-            batchSize=self.batch_size
+            batchSize=self.batch_size,
         )
         return f"collaborative?host={self.host}?port={self.port}?config={json.dumps(config)}"
 
@@ -165,7 +167,7 @@ class ReactUI(LightningFlow):
 
 
 class TensorboardFlow(LightningFlow):
-    def __init__(self, host:str, port: int):
+    def __init__(self, host: str, port: int):
         super().__init__()
         self.tensorboard = TensorboardWork(host, port)
         self.running = False

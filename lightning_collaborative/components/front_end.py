@@ -23,7 +23,7 @@ class ReactWebFrontend(StaticWebFrontend):
         self._process.start()
 
 
-def start_server(serve_dir: str, host: str, port: int, path:str) -> None:
+def start_server(serve_dir: str, host: str, port: int, path: str) -> None:
     app = Flask(
         __name__, static_folder=f"{serve_dir}/static", template_folder=f"{serve_dir}"
     )

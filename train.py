@@ -5,8 +5,8 @@ import time
 import fire
 import torch
 from pytorch_lightning import LightningModule, Trainer
-from torch.utils.data import DataLoader, Dataset
 from pytorch_lightning.callbacks import ProgressBarBase
+from torch.utils.data import DataLoader, Dataset
 
 
 class RandomDataset(Dataset):
@@ -55,7 +55,6 @@ class BoringModel(LightningModule):
 
 
 class ProgressBar(ProgressBarBase):
-
     def __init__(self):
         super().__init__()
         self._enabled = True
@@ -70,12 +69,12 @@ class ProgressBar(ProgressBarBase):
         if self._enabled:
             metrics = self.get_metrics(trainer, pl_module)
             metrics.pop("v_num")
-            metrics = ' '.join([f'{k}:{v}' for k, v in metrics.items()])
+            metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
             print(
-                f'Epoch: {trainer.current_epoch} '
-                f'Batch: [{self.train_batch_idx}/{self.total_train_batches}]  '
-                f'Metrics: {metrics}\r',
-                flush=True
+                f"Epoch: {trainer.current_epoch} "
+                f"Batch: [{self.train_batch_idx}/{self.total_train_batches}]  "
+                f"Metrics: {metrics}\r",
+                flush=True,
             )
 
 
@@ -97,7 +96,7 @@ def main(*args, **kwargs):
         max_epochs=10,
         log_every_n_steps=1,
         enable_model_summary=False,
-        callbacks=ProgressBar()
+        callbacks=ProgressBar(),
     )
     trainer.fit(model, train_dataloaders=train_data, val_dataloaders=val_data)
     trainer.test(model, dataloaders=test_data)
