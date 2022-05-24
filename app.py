@@ -42,7 +42,7 @@ class CheckEnvironmentWork(LightningWork):
         self.cuda = self.devices > 0
         self.internet = setup.sufficient_internet()
         self.memory = setup.sufficient_memory()
-        self.bandwidth = str(setup.bandwidth()) + "GB/s"
+        self.bandwidth = f"{setup.bandwidth()*1024:.1f}" + "MBit/s"
         self.current_memory = (
             "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
         )
