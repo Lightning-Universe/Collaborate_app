@@ -3,7 +3,6 @@ import operator
 import os
 import platform
 import subprocess
-import time
 from typing import List
 from xml.etree import ElementTree
 
@@ -84,21 +83,9 @@ class EnvironmentChecker:
 
         import speedtest
 
-        config = dict(
-            sizes=dict(
-                upload=[32_768, 65_536, 131_072, 262_144],
-                download=[
-                    350,
-                    500,
-                    750,
-                    1000,
-                    1500,
-                ],
-            )
-        )
         s = (
             speedtest.Speedtest()
-        )  # using config=config makes the test faster (seems to take forever now) but reports way too low bandwidth
+        )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
         s.get_servers([])
         s.get_best_server()
         s.download()
