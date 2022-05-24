@@ -447,13 +447,19 @@ function StopTrain(props) {
                         TRAIN
                     </Typography>
                     <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
-                        Training started. Logs should appear on the left soon.
+                        Training has started. Logs should appear on the left soon.
                     </Typography>
                 </Grid>
                 <Grid item xs={6}  align="center">
                     <ColorButton onClick={trainClick} disabled={!props.enableTrainState} variant="contained" sx={{ mt:1, display: 'flex', width:'50%'}}>STOP TRAINING</ColorButton>
                 </Grid>
             </Grid>
+                                <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
+                        You can see your local stored metrics in the LOCAL MONITOR tab.
+                    </Typography>
+                    <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1}}>
+                        If joining the Lightning Collaborative Run, You can see the global metrics on W&B in the GLOBAL MONITOR tab.
+                    </Typography>
         </Paper>
     </React.Fragment>
   );
