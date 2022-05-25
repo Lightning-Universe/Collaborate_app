@@ -11,10 +11,11 @@ from lightning.components.python import PopenPythonScript
 # todo: unsure if we can use the Tracer, as we need to capture the stdout
 # todo: also tracing feels a bit hacky...
 class CollaborativeLightningScript(PopenPythonScript):
-    def __init__(self, script_path: Union[str, Path], **kwargs):
+    def __init__(self, script_path: Union[str, Path], debug: bool, **kwargs):
         super().__init__(script_path, **kwargs)
         self.logs = ""
         self._device = None
+        self.debug = debug
         self._collab_host = None
         self._collab_port = None
         self._server = None
@@ -34,6 +35,8 @@ class CollaborativeLightningScript(PopenPythonScript):
             self.script_args += ["--overlap_communication"]
         if optimize_memory:
             self.script_args += ["--optimize_memory"]
+        if power_sgd:
+            self.script_args += ["--power_sgd"]
         self.script_args += [f"--batch_size={batch_size}"]
         self._device = device
         self._collab_host = host
@@ -42,7 +45,8 @@ class CollaborativeLightningScript(PopenPythonScript):
         return super().run()
 
     def _run_with_subprocess_popen(self) -> None:
-        cmd = [sys.executable] + [self.script_path] + self.script_args
+        script_path = self.script_path if not self.debug else "dummy_train.py"
+        cmd = [sys.executable] + [script_path] + self.script_args
         env = self.env if self.env is not None else os.environ.copy()
         if self._server:
             env["PL_ENDPOINT"] = str(1)

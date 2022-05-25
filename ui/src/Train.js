@@ -21,6 +21,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CopyBlock, dracula } from "react-code-blocks";
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import { useLightningState } from "./hooks/useLightningState";
 
 
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -196,16 +197,17 @@ function Setup(props) {
           return;
         }
         props.setStartInstallState(true);
-        props.state.flows.setup_flow.vars['start'] = true;
-        props.apiClient.setState(props.state);
-        props.refreshState();
+        var state = props.lightningState;
+        state.flows.setup_flow.vars.start = true;
+        props.updateLightningState(state);
 
         function check_fn() {
-            props.apiClient.getState().then(check)
+            check(props.lightningState);
         }
 
         function check(state){
             var checks = state.flows.setup_flow.works.environment_check.vars
+            console.log(checks);
             setCheck(checks['cuda'], props.setCompleteCUDA)
             setCheck(checks['linux'], props.setCompleteLinux)
             setCheck(checks['python'], props.setCompletePython)
@@ -220,12 +222,12 @@ function Setup(props) {
                     props.setEnableTrainState(true);
                 }
             } else {
-                console.log("rechecking state", props.state)
-                sleep(1000).then(check_fn);
+                console.log("rechecking state", props.lightningState);
+                //sleep(1000).then(check_fn);
             }
         }
-        props.apiClient.getState().then(check)
-
+        console.log("WAITING");
+        check(props.lightningState);
   }
 
   return (
@@ -287,6 +289,9 @@ function refreshTrainingState(props){
                 props.setStartTraining(true);
                 props.setStopTraining(false);
                 props.setEnableTrainState(true);
+
+                var checks = state.flows.setup_flow.works.environment_check.vars
+                props.setDevices(checks['devices'])
 
                 function logs_fn() {
                     props.apiClient.getState().then(logs);
@@ -558,8 +563,10 @@ export default function Train(props){
   var logState = props.logState;
   var setLogState = props.setLogState;
 
+  const { lightningState, updateLightningState } = useLightningState();
+
   React.useEffect(() => {
-      refreshTrainingState({setShareInviteLink, setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState});
+      refreshTrainingState({setShareInviteLink, setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState, setDevices});
   }, []);
 
   return (
@@ -571,7 +578,7 @@ export default function Train(props){
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           Train collaboratively, using Lightning Flash to train a translation model.
         </Typography>
-        {!startTraining ? Setup({shareInviteLink, setShareInviteLink, devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
+        {!startTraining ? Setup({lightningState, updateLightningState, shareInviteLink, setShareInviteLink, devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage, state, apiClient, refreshState}): null}
         {!startTraining ? Config({shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, wandb, setWandb, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize}): null}
         {!startTraining ? StartTrain({shareInviteLink, setShareInviteLink, enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, wandb, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, stopTraining, setStopTraining, logState, setLogState, state, apiClient, refreshState}): null}
         {startTraining ? StopTrain({shareInviteLink, setShareInviteLink, stopTraining, setStopTraining, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState, state, apiClient, refreshState}): null}

@@ -2,3 +2,4 @@ torch
 hivemind
 speedtest-cli
 tensorboard
+lightning-flash[text]

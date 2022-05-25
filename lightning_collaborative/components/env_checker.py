@@ -13,7 +13,7 @@ class EnvironmentChecker:
     def __init__(
         self,
         debug: bool = False,
-        minimum_bandwidth_gb: int = 1,
+        minimum_bandwidth_gb: int = 0,
         min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug

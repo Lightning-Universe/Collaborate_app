@@ -9,7 +9,7 @@ import { CopyBlock, dracula } from "react-code-blocks";
 import { styled } from "@mui/material/styles";
 import Train from './Train';
 import ScrollableFeed from 'react-scrollable-feed'
-import { useLightningState } from "./State";
+import { useTempState } from "./State";
 import apiClient from "./API";
 
 const CardContentNoPadding = styled(CardContent)(`
@@ -20,7 +20,7 @@ const CardContentNoPadding = styled(CardContent)(`
 `);
 
 function Main() {
-  const { state, refreshState } = useLightningState();
+  const { state, refreshState } = useTempState();
 
   const [logState, setLogState] = React.useState('\nLogs will appear here once training begins.')
 

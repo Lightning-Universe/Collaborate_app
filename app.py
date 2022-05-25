@@ -31,6 +31,7 @@ class CheckEnvironmentWork(LightningWork):
         self.debug = debug
 
     def run(self):
+        print("KICKING OFF")
         setup = EnvironmentChecker(debug=self.debug)
         self.linux = setup.check_linux()
 
@@ -50,11 +51,13 @@ class CheckEnvironmentWork(LightningWork):
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         self.complete = True
+        print("COMPELTE")
 
 
 class TrainFlow(LightningFlow):
-    def __init__(self):
+    def __init__(self, debug: bool):
         super().__init__()
+        self.debug = debug
         self.invite_link = None
         self.share_invite_link = None
         self.devices = None
@@ -87,7 +90,10 @@ class TrainFlow(LightningFlow):
                     self,
                     f"work_{x}",
                     CollaborativeLightningScript(
-                        script_path="train.py", run_once=False, parallel=True
+                        script_path="train.py",
+                        run_once=False,
+                        parallel=True,
+                        debug=self.debug,
                     ),
                 )
             getattr(self, f"work_{x}").run(
@@ -147,12 +153,12 @@ class TrainFlow(LightningFlow):
 
 
 class SetupFlow(LightningFlow):
-    def __init__(self):
+    def __init__(self, debug: bool):
         super().__init__()
         self.start = False
         # todo: debug will mean even if we don't fulfill requirements,
         #  we'll be allowed to train.
-        self.environment_check = CheckEnvironmentWork(debug=True)
+        self.environment_check = CheckEnvironmentWork(debug)
 
     def run(self):
         if self.start:
@@ -268,9 +274,10 @@ class ReactUI(LightningFlow):
 class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
+        debug = os.environ.get("DEBUG", 0) == str(1)
         self.react_ui = ReactUI()
-        self.setup_flow = SetupFlow()
-        self.train_flow = TrainFlow()
+        self.setup_flow = SetupFlow(debug=debug)
+        self.train_flow = TrainFlow(debug=debug)
         self.tensorboard_flow = TensorBoard(log_dir=Path("./lightning_logs"))
 
     def run(self):
