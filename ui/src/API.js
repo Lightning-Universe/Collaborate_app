@@ -1,5 +1,7 @@
 import axios from "axios";
 
+const host = process.env.REACT_APP_API_URL ?? "http://127.0.0.1:7501";
+
 class APIStateClient {
 
   constructor() {
@@ -10,7 +12,7 @@ class APIStateClient {
         "X-Lightning-Session-ID": "",
         "X-Lightning-Type": "DEFAULT",
       },
-      baseURL: "http://127.0.0.1:7501",
+      baseURL: host,
     });
   }
 

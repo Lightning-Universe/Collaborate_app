@@ -1,15 +1,15 @@
 import json
 import os
 import signal
-from pathlib import Path
 from typing import Optional
 
 from lightning import LightningApp, LightningFlow, LightningWork
+from lightning.frontend import StaticWebFrontend
+from lightning.storage import Path
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.front_end import ReactWebFrontend
 from lightning_collaborative.components.script import CollaborativeLightningScript
-from lightning_collaborative.components.tensorboard import TensorboardWork
+from lightning_collaborative.components.tensorboard import TensorBoard
 
 GLOBAL_RUN_LINK = "LIT"
 
@@ -161,21 +161,108 @@ class SetupFlow(LightningFlow):
             self.start = False
 
 
+class TestFrontEnd(StaticWebFrontend):
+    """A frontend that serves static files from a directory using FastAPI.
+
+    Return this in your `LightningFlow.configure_layout()` method if you wish to serve a HTML page.
+
+    Arguments:
+        serve_dir: A local directory to serve files from. This directory should at least contain a file `index.html`.
+
+    Example:
+
+        In your LightningFlow, override the method `configure_layout`:
+
+        .. code-block:: python
+
+            def configure_layout(self):
+                return StaticWebFrontend("path/to/folder/to/serve")
+    """
+
+    def __init__(self, serve_dir: str) -> None:
+        super().__init__(serve_dir)
+        self.serve_dir = serve_dir
+        import multiprocessing as mp
+
+        self._process: Optional[mp.Process] = None
+
+    def start_server(self, host: str, port: int) -> None:
+        import multiprocessing as mp
+
+        from lightning.utilities.log import get_frontend_logfile
+
+        log_file = str(get_frontend_logfile())
+        print("STARTING SERVER")
+        from lightning.core.constants import APP_SERVER_HOST, APP_SERVER_PORT
+
+        self._process = mp.Process(
+            target=run_server,
+            kwargs=dict(
+                host=host,
+                port=port,
+                serve_dir=self.serve_dir,
+                path=f"/{self.flow.name}",
+                log_file=log_file,
+                api_host=APP_SERVER_HOST + ":" + str(APP_SERVER_PORT),
+            ),
+        )
+        self._process.start()
+
+
+def run_server(
+    serve_dir: str,
+    host: str = "localhost",
+    port: int = -1,
+    path: str = "/",
+    log_file: str = "",
+    api_host: str = "",
+) -> None:
+    os.environ["API_URL"] = api_host
+
+    start_server(serve_dir, host, port, path, log_file)
+
+
+def start_server(
+    serve_dir: str,
+    host: str = "localhost",
+    port: int = -1,
+    path: str = "/",
+    log_file: str = "",
+) -> None:
+
+    if port == -1:
+        from lightning.utilities.network import find_free_network_port
+
+        port = find_free_network_port()
+    from fastapi import FastAPI
+
+    fastapi_service = FastAPI()
+    # trailing / is required for urljoin to properly join the path. In case of
+    # multiple trailing /, urljoin removes them
+    from urllib.parse import urljoin
+
+    from lightning.frontend.web import healthz
+
+    fastapi_service.get(urljoin(f"{path}/", "healthz"), status_code=200)(healthz)
+    from starlette.staticfiles import StaticFiles
+
+    fastapi_service.mount(
+        path, StaticFiles(directory=serve_dir, html=True), name="static"
+    )
+
+    import uvicorn
+    from lightning.frontend.web import _get_log_config
+
+    log_config = (
+        _get_log_config(log_file) if log_file else uvicorn.config.LOGGING_CONFIG
+    )
+
+    uvicorn.run(app=fastapi_service, host=host, port=port, log_config=log_config)
+
+
 class ReactUI(LightningFlow):
     def configure_layout(self):
-        return ReactWebFrontend(str(Path(__file__).parent / "ui/build"))
-
-
-class TensorboardFlow(LightningFlow):
-    def __init__(self, host: str, port: int):
-        super().__init__()
-        self.tensorboard = TensorboardWork(host, port)
-        self.running = False
-
-    def run(self):
-        if not self.running:
-            self.tensorboard.run()
-            self.running = True
+        return TestFrontEnd(str(Path(__file__).parent / "ui/build"))
 
 
 class RootFlow(LightningFlow):
@@ -184,8 +271,7 @@ class RootFlow(LightningFlow):
         self.react_ui = ReactUI()
         self.setup_flow = SetupFlow()
         self.train_flow = TrainFlow()
-        self.tb_port = 6001
-        self.tensorboard_flow = TensorboardFlow(host="0.0.0.0", port=self.tb_port)
+        self.tensorboard_flow = TensorBoard(log_dir=Path("./lightning_logs"))
 
     def run(self):
         self.react_ui.run()
@@ -196,7 +282,7 @@ class RootFlow(LightningFlow):
     def configure_layout(self):
         return [
             {"name": "Train", "content": self.react_ui},
-            {"name": "Local Monitor", "content": f"http://localhost:{self.tb_port}"},
+            {"name": "Local Monitor", "content": self.tensorboard_flow},
             {"name": "Global Monitor", "content": self.train_flow.wandb_url},
         ]
 
