@@ -3,3 +3,6 @@ hivemind
 speedtest-cli
 tensorboard
 lightning-flash[text]
+fire
+https://github.com/learning-at-home/hivemind/archive/refs/heads/master.zip
+https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip

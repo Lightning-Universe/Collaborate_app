@@ -31,7 +31,7 @@ class CheckEnvironmentWork(LightningWork):
         self.debug = debug
 
     def run(self):
-        print("KICKING OFF")
+        print("Starting environment check")
         setup = EnvironmentChecker(debug=self.debug)
         self.linux = setup.check_linux()
 
@@ -51,7 +51,7 @@ class CheckEnvironmentWork(LightningWork):
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         self.complete = True
-        print("COMPELTE")
+        print("Finished environment check")
 
 
 class TrainFlow(LightningFlow):
@@ -65,7 +65,6 @@ class TrainFlow(LightningFlow):
         self.optimize_memory = None
         self.optimize_communication = None
         self.wandb = None
-        self.devices = None
         self.batch_size = None
         self.start_training = False
         self.stop_training = False
@@ -198,7 +197,6 @@ class TestFrontEnd(StaticWebFrontend):
         from lightning.utilities.log import get_frontend_logfile
 
         log_file = str(get_frontend_logfile())
-        print("STARTING SERVER")
         from lightning.core.constants import APP_SERVER_HOST, APP_SERVER_PORT
 
         self._process = mp.Process(
@@ -274,7 +272,7 @@ class ReactUI(LightningFlow):
 class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
-        debug = os.environ.get("DEBUG", 0) == str(1)
+        debug = os.environ.get("DEBUG", str(0)) == str(1)
         self.react_ui = ReactUI()
         self.setup_flow = SetupFlow(debug=debug)
         self.train_flow = TrainFlow(debug=debug)

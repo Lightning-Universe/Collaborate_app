@@ -1,12 +1,8 @@
 import importlib
-import operator
-import os
 import platform
 import subprocess
 from typing import List
 from xml.etree import ElementTree
-
-from packaging.version import Version
 
 
 class EnvironmentChecker:
@@ -55,26 +51,8 @@ class EnvironmentChecker:
             return False
 
     def setup_python_environment(self):
-        if not operator.ge(
-            Version(platform.python_version()), Version("3.0.0")
-        ) or not self._check_package_installed("pip"):
-            return False
-        exit_code = os.system("pip install -r requirements.txt")
-        success = exit_code == 0
-        if not success:
-            return False
-
-        # check pytorch-lightning has been installed with Collaborative support, else re-install
-        import pytorch_lightning
-
-        if not operator.ge(
-            Version(pytorch_lightning.__version__), Version("1.7.0.dev0")
-        ):
-            print("Installing pytorch-lightning main.")
-            exit_code = os.system(
-                "pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip"
-            )
-        return exit_code == 0
+        # todo: we can get rid of this probably
+        return True
 
     def sufficient_memory(self):
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())

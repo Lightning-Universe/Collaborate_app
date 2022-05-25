@@ -1,7 +1,9 @@
+import os
 from functools import partial
 
 import fire
 import flash
+import torch
 from flash.core.data.utils import download_data
 from flash.text import TextClassificationData, TextClassifier
 from flash.text.classification.collate import TextClassificationCollate
@@ -40,7 +42,13 @@ def main(
     averaging_timeout: int = 300,
     allreduce_timeout: int = 300,
 ):
+    print("server", os.environ.get("PL_ENDPOINT"), flush=True)
+    print("host", os.environ.get("PL_HOST"), flush=True)
+    print("port", os.environ.get("PL_PORT"), flush=True)
+    print("peer_endpoint", os.environ.get("PL_PEER_ENDPOINT"), flush=True)
     download_data("https://pl-flash-data.s3.amazonaws.com/imdb.zip", "./data/")
+
+    print("TORCH CUDA", torch.cuda.is_available())
 
     datamodule = TextClassificationData.from_csv(
         "review",
