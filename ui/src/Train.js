@@ -21,6 +21,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CopyBlock, dracula } from "react-code-blocks";
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import { useLightningState } from "./hooks/useLightningState";
 
 
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -557,6 +558,10 @@ export default function Train(props){
   var refreshState = props.refreshState;
   var logState = props.logState;
   var setLogState = props.setLogState;
+
+  const { lightningState } = useLightningState(); // fails here
+
+  console.log(lightningState);
 
   React.useEffect(() => {
       refreshTrainingState({setShareInviteLink, setStopTraining, setStartTraining, apiClient, setEnableTrainState, setLogState});
