@@ -1,6 +1,5 @@
 # Lightning Collaborative
 
-
 <div align="center">
    <img src="https://github.com/PyTorchLightning/lightning-collaborative/blob/bb576092648a1998f6873cd801ddcf5379c2123c/images/icon.png?raw=true" width="10%">
    <div align="center">
