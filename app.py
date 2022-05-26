@@ -138,8 +138,6 @@ class TrainFlow(LightningFlow):
             [host, port] = [pieces[1], pieces[2]]
             self.host = host.replace("host=", "")
             self.port = int(port.replace("port=", ""))
-        else:
-            self.host, self.port = CollaborativeLightningScript.create_peer_endpoint()
 
     def _generate_link(self):
         config = dict(

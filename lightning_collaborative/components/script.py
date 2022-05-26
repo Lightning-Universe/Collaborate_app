@@ -2,9 +2,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
-import requests
 from lightning.components.python import PopenPythonScript
 
 
@@ -16,15 +15,15 @@ class CollaborativeLightningScript(PopenPythonScript):
         self.logs = ""
         self._device = None
         self.debug = debug
-        self._collab_host = None
-        self._collab_port = None
+        self._peer_host = None
+        self._peer_port = None
         self._server = None
 
     def run(
         self,
         server: bool,
-        host: int,
-        port: int,
+        host: Optional[int],
+        port: Optional[int],
         device: int,
         power_sgd: bool,
         overlap_communication: bool,
@@ -39,8 +38,8 @@ class CollaborativeLightningScript(PopenPythonScript):
             self.script_args += ["--power_sgd"]
         self.script_args += [f"--batch_size={batch_size}"]
         self._device = device
-        self._collab_host = host
-        self._collab_port = port
+        self._peer_host = host
+        self._peer_port = port
         self._server = server
         return super().run()
 
@@ -50,10 +49,10 @@ class CollaborativeLightningScript(PopenPythonScript):
         env = self.env if self.env is not None else os.environ.copy()
         if self._server:
             env["PL_ENDPOINT"] = str(1)
-            env["PL_HOST"] = str(self._collab_host)
-            env["PL_PORT"] = str(self._collab_port)
+            env["PL_HOST"] = str(self.host)
+            env["PL_PORT"] = str(self.port)
         else:
-            env["PL_PEER_ENDPOINT"] = str(f"{self._collab_host}:{self._collab_port}")
+            env["PL_PEER_ENDPOINT"] = str(f"{self._peer_host}:{self._peer_port}")
         env["CUDA_VISIBLE_DEVICES"] = str(self._device)
         with subprocess.Popen(
             cmd,
@@ -71,12 +70,3 @@ class CollaborativeLightningScript(PopenPythonScript):
             self.exit_code = proc.wait()
             if self.exit_code != 0:
                 print(f"process exited with {self.exit_code}")
-
-    @staticmethod
-    def create_peer_endpoint():
-        request = requests.get("https://api.ipify.org")
-        request.raise_for_status()
-
-        address = request.text
-        port = 9330  # todo: hardcoded for now
-        return address, port
