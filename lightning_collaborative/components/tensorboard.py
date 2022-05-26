@@ -1,34 +1,53 @@
 import os
-import signal
 import subprocess
+import time
 
-from lightning import LightningWork
-from lightning.utilities.app_helpers import _collect_child_process_pids
+from lightning import BuildConfig, LightningFlow, LightningWork
+from lightning.storage import Path
 
 
-class TensorboardWork(LightningWork):
-    def __init__(self, host: str, port: int):
-        super().__init__(parallel=True)
-        self.tb_host = host
-        self.tb_port = port
-        self.pid = None
+class TensorBoard(LightningFlow):
+    def __init__(self, log_dir: Path, sync_every_n_seconds: int = 5) -> None:
+        """This TensorBoard component synchronizes the log directory of an experiment and starts up the server.
 
-    def run(self):
-        os.makedirs("./lightning_logs", exist_ok=True)
-        proc = subprocess.Popen(
+        Args:
+            log_dir: The path to the directory where the TensorBoard log-files will appear.
+            sync_every_n_seconds: How often to sync the log directory (given as an argument to the run method)
+        """
+        super().__init__()
+        self.worker = TensorBoardWorker(
+            log_dir=log_dir, sync_every_n_seconds=sync_every_n_seconds
+        )
+
+    def run(self) -> None:
+        self.worker.run()
+
+
+class TensorBoardWorker(LightningWork):
+    def __init__(self, log_dir: Path, sync_every_n_seconds: int = 5) -> None:
+        super().__init__(
+            cloud_build_config=BuildConfig(requirements=["tensorboard"]), parallel=True
+        )
+        self.log_dir = log_dir
+        self._sync_every_n_seconds = sync_every_n_seconds
+
+    def run(self) -> None:
+        if not self.log_dir.exists_local():
+            os.makedirs(self.log_dir, exist_ok=True)
+        subprocess.Popen(
             [
                 "tensorboard",
                 "--logdir",
-                "./lightning_logs",
+                str(self.log_dir),
                 "--host",
-                f"{self.tb_host}",
+                self.host,
                 "--port",
-                f"{self.tb_port}",
+                str(self.port),
             ]
         )
-        self.pid = proc.pid
-        proc.wait()
 
-    def on_exit(self):
-        for child_pid in _collect_child_process_pids(os.getpid()):
-            os.kill(child_pid, signal.SIGTERM)
+        # Download the log directory periodically
+        while True:
+            time.sleep(self._sync_every_n_seconds)
+            if self.log_dir.exists_remote():
+                self.log_dir.get(overwrite=True)

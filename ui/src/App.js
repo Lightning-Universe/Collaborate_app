@@ -9,8 +9,6 @@ import { CopyBlock, dracula } from "react-code-blocks";
 import { styled } from "@mui/material/styles";
 import Train from './Train';
 import ScrollableFeed from 'react-scrollable-feed'
-import { useLightningState } from "./State";
-import apiClient from "./API";
 
 const CardContentNoPadding = styled(CardContent)(`
   padding: 0;
@@ -20,7 +18,6 @@ const CardContentNoPadding = styled(CardContent)(`
 `);
 
 function Main() {
-  const { state, refreshState } = useLightningState();
 
   const [logState, setLogState] = React.useState('\nLogs will appear here once training begins.')
 
@@ -34,22 +31,22 @@ function Main() {
           <Container sx={{ flex: 1, justifyContent: "center", display: 'flex', flexDirection: 'column' }}>
             <Card sx={{ borderRadius: 2 }}>
               <CardContentNoPadding>
-                <Box sx={{ height:"800px", overflowY:'auto', width:'100%', pb:0, backgroundColor:'#282a36' }}>
-                <ScrollableFeed>
-                  <CopyBlock
-                    text={logState}
-                    language={"bash"}
-                    showLineNumbers={false}
-                    wrapLines
-                    theme={dracula}
-                    customStyle={{ paddingLeft: 20 }}
-                  />
-                </ScrollableFeed>
+                <Box sx={{ height: "800px", overflowY: 'auto', width: '100%', pb: 0, backgroundColor: '#282a36' }}>
+                  <ScrollableFeed>
+                    <CopyBlock
+                      text={logState}
+                      language={"bash"}
+                      showLineNumbers={false}
+                      wrapLines
+                      theme={dracula}
+                      customStyle={{ paddingLeft: 20 }}
+                    />
+                  </ScrollableFeed>
                 </Box>
               </CardContentNoPadding>
             </Card>
           </Container>
-          {Train({state, refreshState, apiClient, logState, setLogState})}
+          {Train({ logState, setLogState })}
         </Container>
         {/* End hero unit */}
         <Container maxWidth="xl"

@@ -1,4 +1,7 @@
-torch
-hivemind
+torch==1.11.0
 speedtest-cli
-tensorboard
+tensorboard==2.9.0
+lightning-flash[text]==0.7.5
+fire==0.4.0
+https://github.com/learning-at-home/hivemind/archive/de6b4f5ae835a633ca7876209f2929d069e988f0.zip
+https://github.com/PyTorchLightning/pytorch-lightning/archive/dd475183227644a8d22dca3deb18c99fb0a9b2c4.zip

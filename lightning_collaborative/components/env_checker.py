@@ -1,19 +1,17 @@
 import importlib
-import operator
-import os
 import platform
 import subprocess
 from typing import List
 from xml.etree import ElementTree
 
-from packaging.version import Version
+import torch
 
 
 class EnvironmentChecker:
     def __init__(
         self,
         debug: bool = False,
-        minimum_bandwidth_gb: int = 1,
+        minimum_bandwidth_gb: int = 0,
         min_cuda_memory_gb: int = 8,
     ):
         self.debug = debug
@@ -55,26 +53,8 @@ class EnvironmentChecker:
             return False
 
     def setup_python_environment(self):
-        if not operator.ge(
-            Version(platform.python_version()), Version("3.0.0")
-        ) or not self._check_package_installed("pip"):
-            return False
-        exit_code = os.system("pip install -r requirements.txt")
-        success = exit_code == 0
-        if not success:
-            return False
-
-        # check pytorch-lightning has been installed with Collaborative support, else re-install
-        import pytorch_lightning
-
-        if not operator.ge(
-            Version(pytorch_lightning.__version__), Version("1.7.0.dev0")
-        ):
-            print("Installing pytorch-lightning main.")
-            exit_code = os.system(
-                "pip install -r https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/master.zip"
-            )
-        return exit_code == 0
+        # todo: we can get rid of this probably
+        return True
 
     def sufficient_memory(self):
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
@@ -84,7 +64,12 @@ class EnvironmentChecker:
             return 1
         if self._bandwidth_cache is not None:
             return self._bandwidth_cache
+        try:
+            return self._run_speed_test()
+        except:  # noqa: E722
+            return 1  # todo: this is a hack because sometimes speed test fails
 
+    def _run_speed_test(self):
         import speedtest
 
         s = (
@@ -157,3 +142,9 @@ class EnvironmentChecker:
         if self.debug:
             return True
         return self.setup_python_environment() and self.check_linux()
+
+    @classmethod
+    def local_devices(cls):
+        if torch.cuda.is_available():
+            return torch.cuda.device_count()
+        return 1  # todo this should be set to None?
