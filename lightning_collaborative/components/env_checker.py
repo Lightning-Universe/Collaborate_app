@@ -64,24 +64,28 @@ class EnvironmentChecker:
             return 1
         if self._bandwidth_cache is not None:
             return self._bandwidth_cache
-        return 1  # todo
+        try:
+            return self._run_speed_test()
+        except:  # noqa: E722
+            return 1  # todo: this is a hack because sometimes speed test fails
 
-        # import speedtest
-        #
-        # s = (
-        #     speedtest.Speedtest()
-        # )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
-        # s.get_servers([])
-        # s.get_best_server()
-        # s.download()
-        # s.upload()
-        # s.results.share()
-        # d = s.results.dict()
-        # upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
-        # download = d["download"] / 1024 / 1024 / 1024
-        # res = min(upload, download)
-        # self._bandwidth_cache = res
-        # return res
+    def _run_speed_test(self):
+        import speedtest
+
+        s = (
+            speedtest.Speedtest()
+        )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
+        s.get_servers([])
+        s.get_best_server()
+        s.download()
+        s.upload()
+        s.results.share()
+        d = s.results.dict()
+        upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
+        download = d["download"] / 1024 / 1024 / 1024
+        res = min(upload, download)
+        self._bandwidth_cache = res
+        return res
 
     def cuda_memory(self) -> List[float]:
         if not self.check_cuda_devices_available():

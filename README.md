@@ -3,7 +3,7 @@
 Collaboratively train a model with friends/colleagues or scale on cloud compute.
 
 <div align="center">
-   <img src="https://storage.googleapis.com/grid-packages/pytorch-lightning-app/pl-app-thumbnail.png" width="70%">
+   <img src="https://github.com/PyTorchLightning/lightning-collaborative/blob/bb576092648a1998f6873cd801ddcf5379c2123c/images/icon.png?raw=true" width="70%">
 </div>
 
 ## Installation
@@ -39,7 +39,8 @@ DEBUG=1 lightning run app app.py
 
 ## Known issues
 
-- Running in the cloud takes a considerable time to start. This is due to the re-installation of requirements
+- Running in the cloud takes a considerable time to start. This is due to the re-installation of requirements.
+- The internet check isn't real all the time. Sometimes it disconnects for no reason.
 - Multiple GPUs are not supported. Will be supported before launch!
 - A very small model is training. This is parimily due to RAM restrictions.
 - I can’t seem to pass the link to a friend to train! The V0 has single GPU machine working (I know, not collaborative but a start).
@@ -49,3 +50,4 @@ DEBUG=1 lightning run app app.py
 
 - Can we add Mac support? the blocker is hivemind; more work will need to be done to see how viable it is to make hivemind mac supported
 - Make the checks actually work; what is a sufficient internet connection?
+- Dropdown box to show the code that's actually being run.
