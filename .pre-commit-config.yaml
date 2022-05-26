@@ -5,7 +5,7 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit suggestions'
   # submodules: true
-
+exclude: ui/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
