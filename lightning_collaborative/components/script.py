@@ -31,7 +31,7 @@ class CollaborativeLightningWork(PopenPythonScript):
         self.discovered_devices = None
         self.current_memory = None
         self.warning = ""
-        self.success = False
+        self.success = None
         self.training_started = False
         self.share_invite_link = None
 

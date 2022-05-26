@@ -469,7 +469,7 @@ export default function Train(props) {
         if (checks.discovered_devices !== null) {
           setDevices(checks.discovered_devices)
         }
-        if (!checks.success) {
+        if ((checks.success != null) && (checks.success != true)) {
           setStartInstallState(false);
           setFlowRunning(false);
           setChecksFailed(true);

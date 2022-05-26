@@ -32,6 +32,9 @@ class TextClassifierCustom(TextClassifier):
             result = result.logits
         return result
 
+    def on_train_batch_end(self, outputs, batch, batch_idx: int) -> None:
+        self.log("num_peers", self.trainer.strategy.num_peers)
+
 
 def main(
     power_sgd: bool = False,
@@ -101,6 +104,7 @@ def main(
         limit_val_batches=0,
         limit_test_batches=0,
         log_every_n_steps=1,
+        enable_progress_bar=False,
     )
     trainer.fit(model, datamodule=datamodule)
 
