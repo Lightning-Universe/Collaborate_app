@@ -1,6 +1,6 @@
+import os
 import subprocess
 import time
-from typing import Dict, List
 
 from lightning import BuildConfig, LightningFlow, LightningWork
 from lightning.storage import Path
@@ -22,9 +22,6 @@ class TensorBoard(LightningFlow):
     def run(self) -> None:
         self.worker.run()
 
-    def configure_layout(self) -> List[Dict[str, str]]:
-        return [{"name": "TensorBoard", "content": self.worker.url}]
-
 
 class TensorBoardWorker(LightningWork):
     def __init__(self, log_dir: Path, sync_every_n_seconds: int = 5) -> None:
@@ -35,6 +32,8 @@ class TensorBoardWorker(LightningWork):
         self._sync_every_n_seconds = sync_every_n_seconds
 
     def run(self) -> None:
+        if not self.log_dir.exists_local():
+            os.makedirs(self.log_dir, exist_ok=True)
         subprocess.Popen(
             [
                 "tensorboard",

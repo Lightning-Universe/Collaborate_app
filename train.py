@@ -35,7 +35,7 @@ class TextClassifierCustom(TextClassifier):
 
 def main(
     power_sgd: bool = False,
-    overlap_communication: bool = False,
+    optimize_communication: bool = False,
     optimize_memory: bool = False,
     batch_size: int = 8192,
     max_epochs: int = 100,
@@ -59,7 +59,10 @@ def main(
     )
 
     model = TextClassifierCustom(
-        backbone="gpt2", labels=datamodule.labels, learning_rate=1e-5, max_length=512
+        backbone="sshleifer/tiny-gpt2",
+        labels=datamodule.labels,
+        learning_rate=1e-5,
+        max_length=512,
     )
     model.collate_fn = TextClassificationCollateCustom(
         backbone=model.hparams.backbone, max_length=model.hparams.max_length
@@ -77,12 +80,12 @@ def main(
         precision=16 if optimize_memory else 32,
         strategy=CollaborativeStrategy(
             target_batch_size=batch_size,
-            # delay_state_averaging=overlap_communication,
-            # delay_optimizer_step=overlap_communication,
-            # offload_optimizer=overlap_communication,
-            # reuse_grad_buffers=optimize_memory,
-            averaging_timeout=averaging_timeout,
-            allreduce_timeout=allreduce_timeout,
+            delay_state_averaging=optimize_communication,
+            delay_optimizer_step=optimize_communication,
+            offload_optimizer=optimize_communication,
+            reuse_grad_buffers=optimize_memory,
+            # averaging_timeout=averaging_timeout,
+            # allreduce_timeout=allreduce_timeout,
             # Use PowerSGD to reduce communication overhead
             grad_averager_factory=partial(
                 PowerSGDGradientAverager, averager_rank=32, min_compression_ratio=0.5
@@ -98,7 +101,6 @@ def main(
         limit_val_batches=0,
         limit_test_batches=0,
         log_every_n_steps=1,
-        enable_progress_bar=False,
     )
     trainer.fit(model, datamodule=datamodule)
 

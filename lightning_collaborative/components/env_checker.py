@@ -4,6 +4,8 @@ import subprocess
 from typing import List
 from xml.etree import ElementTree
 
+import torch
+
 
 class EnvironmentChecker:
     def __init__(
@@ -62,23 +64,24 @@ class EnvironmentChecker:
             return 1
         if self._bandwidth_cache is not None:
             return self._bandwidth_cache
+        return 1  # todo
 
-        import speedtest
-
-        s = (
-            speedtest.Speedtest()
-        )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
-        s.get_servers([])
-        s.get_best_server()
-        s.download()
-        s.upload()
-        s.results.share()
-        d = s.results.dict()
-        upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
-        download = d["download"] / 1024 / 1024 / 1024
-        res = min(upload, download)
-        self._bandwidth_cache = res
-        return res
+        # import speedtest
+        #
+        # s = (
+        #     speedtest.Speedtest()
+        # )  # using a config makes the test faster (seems to take forever now) but reports way too low bandwidth
+        # s.get_servers([])
+        # s.get_best_server()
+        # s.download()
+        # s.upload()
+        # s.results.share()
+        # d = s.results.dict()
+        # upload = d["upload"] / 1024 / 1024 / 1024  # GBit / s
+        # download = d["download"] / 1024 / 1024 / 1024
+        # res = min(upload, download)
+        # self._bandwidth_cache = res
+        # return res
 
     def cuda_memory(self) -> List[float]:
         if not self.check_cuda_devices_available():
@@ -135,3 +138,9 @@ class EnvironmentChecker:
         if self.debug:
             return True
         return self.setup_python_environment() and self.check_linux()
+
+    @classmethod
+    def local_devices(cls):
+        if torch.cuda.is_available():
+            return torch.cuda.device_count()
+        return 1  # todo this should be set to None?
