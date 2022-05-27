@@ -5,7 +5,6 @@ import time
 import fire
 import torch
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.callbacks import ProgressBarBase
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -54,33 +53,8 @@ class BoringModel(LightningModule):
         return batch_idx % 32 == 0
 
 
-class ProgressBar(ProgressBarBase):
-    def __init__(self):
-        super().__init__()
-        self._enabled = True
-
-    def disable(self):
-        self._enabled = False
-
-    def enable(self) -> None:
-        self._enabled = True
-
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx) -> None:
-        if self._enabled:
-            metrics = self.get_metrics(trainer, pl_module)
-            metrics.pop("v_num")
-            metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
-            print(
-                f"Epoch: {trainer.current_epoch} "
-                f"Batch: [{self.train_batch_idx}/{self.total_train_batches}]  "
-                f"Metrics: {metrics}\r",
-                flush=True,
-            )
-
-
 def main(*args, **kwargs):
     print(args, kwargs, flush=True)
-    print("device", os.environ["CUDA_VISIBLE_DEVICES"], flush=True)
     print("server", os.environ.get("PL_ENDPOINT"), flush=True)
     print("host", os.environ.get("PL_HOST"), flush=True)
     print("port", os.environ.get("PL_PORT"), flush=True)
@@ -96,7 +70,6 @@ def main(*args, **kwargs):
         max_epochs=10,
         log_every_n_steps=1,
         enable_model_summary=False,
-        callbacks=ProgressBar(),
     )
     trainer.fit(model, train_dataloaders=train_data, val_dataloaders=val_data)
     trainer.test(model, dataloaders=test_data)

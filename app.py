@@ -6,7 +6,7 @@ from lightning.frontend import StaticWebFrontend
 from lightning.storage import Path
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.script import CollaborativeLightningWork
+from lightning_collaborative.components.script import CollaborativeLightningRunner
 from lightning_collaborative.components.tensorboard import TensorBoard
 
 GLOBAL_RUN_LINK = "LIT"
@@ -48,7 +48,7 @@ class TrainFlow(LightningFlow):
                 setattr(
                     self,
                     f"work_{x}",
-                    CollaborativeLightningWork(
+                    CollaborativeLightningRunner(
                         script_path="train.py",
                         run_once=False,
                         parallel=True,
@@ -78,18 +78,24 @@ class RootFlow(LightningFlow):
         debug = os.environ.get("DEBUG", str(0)) == str(1)
         self.react_ui = ReactUI()
         self.train_flow = TrainFlow(debug=debug)
-        self.tensorboard_flow = TensorBoard(log_dir=Path("./lightning_logs"))
 
     def run(self):
         self.react_ui.run()
-        self.tensorboard_flow.run()
         self.train_flow.run()
+        if self.train_flow.logs:
+            # training has started, let's start the tensorboard logger
+            if not getattr(self, "logger_component", None):
+                logger_component = TensorBoard(log_dir=self.train_flow.work_0.log_dir)
+                if logger_component is not None:
+                    setattr(self, "logger_component", logger_component)
+            else:
+                self.logger_component.run()
 
     def configure_layout(self):
-        return [
-            {"name": "Train", "content": self.react_ui},
-            {"name": "Monitor", "content": self.tensorboard_flow.worker.url},
-        ]
+        tabs = [{"name": "Train", "content": self.react_ui}]
+        if hasattr(self, "logger_component"):
+            tabs.extend(self.logger_component.configure_layout())
+        return tabs
 
 
 app = LightningApp(root=RootFlow())

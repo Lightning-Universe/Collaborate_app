@@ -21,7 +21,6 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CopyBlock, dracula } from "react-code-blocks";
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { useLightningState } from "./hooks/useLightningState";
 
 
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -396,7 +395,7 @@ function StopTrain(props) {
         </Typography>
         <Card sx={{ borderRadius: 2 }}>
           <CardContentNoPadding>
-            <Box sx={{ overflowY: 'auto', width: '100%', pb: 0, backgroundColor: '#282a36' }}>
+            <Box sx={{ overflowY: 'scroll', width: '100%', pb: 0, backgroundColor: '#282a36' }}>
               <CopyBlock
                 text={props.shareInviteLink}
                 language={"bash"}
@@ -442,10 +441,10 @@ export default function Train(props) {
   const [bandwidth, setBandwidth] = React.useState('')
 
 
-  var logState = props.logState;
-  var setLogState = props.setLogState;
-
-  const { lightningState, updateLightningState } = useLightningState();
+  let logState = props.logState;
+  let setLogState = props.setLogState;
+  let lightningState = props.lightningState;
+  let updateLightningState = props.updateLightningState;
 
   React.useEffect(() => {
     if (lightningState) {
