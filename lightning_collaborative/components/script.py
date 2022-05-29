@@ -64,6 +64,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 greater_equal=Uniform8BitQuantization(),
             )
             if not self.debug:
+                kwargs["precision"] = (16 if self.optimize_memory else 32,)
                 kwargs["strategy"] = (
                     CollaborativeStrategy(
                         target_batch_size=self.batch_size,
@@ -91,6 +92,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                         endpoint=self.is_server,
                         host=self.host if self.is_server else self._peer_host,
                         port=self.port if self.is_server else self._peer_port,
+                        retry_endpoint_sleep_duration=20,  # cloud might take longer to spin up works
                     ),
                 )
             kwargs["accelerator"] = "auto"

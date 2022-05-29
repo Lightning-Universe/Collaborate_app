@@ -58,7 +58,7 @@ class TrainFlow(LightningFlow):
                 )
             getattr(self, f"work_{x}").run(
                 device=x,
-                server=not self.invite_link,
+                server=(not self.invite_link) and (x == 0),
                 invite_link=self.invite_link,
                 power_sgd=self.power_sgd,
                 optimize_memory=self.optimize_memory,
