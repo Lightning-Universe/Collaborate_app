@@ -6,7 +6,6 @@ from typing import Optional
 
 import hivemind
 import pytorch_lightning as pl
-from core.state import ProgressBarState
 from hivemind.optim.progress_tracker import GlobalTrainingProgress
 from lightning.storage import Path
 from pytorch_lightning import Callback
@@ -34,7 +33,6 @@ class CollaborativeProgressTracker(Callback):
         self.work = work
         self.debug = debug
         self.is_enabled = False
-        self._state = ProgressBarState()
         self._trainer = None
 
         self.epoch = 0
