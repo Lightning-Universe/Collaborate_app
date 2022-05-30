@@ -6,7 +6,6 @@ from typing import Optional, Union
 import pytorch_lightning as pl
 import requests
 import torch
-from flash import Trainer
 from hivemind import (
     Float16Compression,
     NoCompression,
@@ -35,8 +34,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self._device = None
         self.logs = ""
         self.debug = debug
-        self._peer_host = None
-        self._peer_port = None
+        self.peer_host = None
+        self.peer_port = None
         self._server = None
         self.linux = None
         self.cuda = None
@@ -69,6 +68,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
         batch_size: int,
         device: int,
         root_flow_cuda_available: bool,
+        work_0_host: Optional[str],
+        work_0_port: Optional[int],
     ) -> None:
         # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
         self._running_on_cloud = (
@@ -89,12 +90,17 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.power_sgd = power_sgd
             self.is_server = server
 
-            host, port = self.public_host, self.port
+            host, port = self.retrieve_public_host(), self.port
             if invite_link:
+                # use the invite link host/port
                 pieces = invite_link.split("?")
                 [host, port] = [pieces[1], pieces[2]]
                 host = host.replace("host=", "")
                 port = int(port.replace("port=", ""))
+            elif not server and work_0_host:
+                # use the first work that was spun up host as we assume that's the main node.
+                host, port = work_0_host, work_0_port
+
             self.share_invite_link = self._generate_link(
                 host=host,
                 port=port,
@@ -103,7 +109,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 optimize_communication=optimize_communication,
                 batch_size=batch_size,
             )
-            self._peer_host, self._peer_port = host, port
+            self.peer_host, self.peer_port = host, port
+            print("SET THE PORTS", self.peer_host, self.peer_port)
             return super().run()
 
     def configure_tracer(self) -> Tracer:
@@ -115,36 +122,38 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 greater_equal=Uniform8BitQuantization(),
             )
             if not self.debug:
-                kwargs["precision"] = (16 if self.optimize_memory else 32,)
-                kwargs["strategy"] = (
-                    CollaborativeStrategy(
-                        target_batch_size=self.batch_size,
-                        delay_state_averaging=self.optimize_communication,
-                        delay_optimizer_step=self.optimize_communication,
-                        offload_optimizer=self.optimize_communication,
-                        reuse_grad_buffers=self.optimize_memory,
-                        # averaging_timeout=averaging_timeout,
-                        # allreduce_timeout=allreduce_timeout,
-                        # Use PowerSGD to reduce communication overhead
-                        grad_averager_factory=partial(
-                            PowerSGDGradientAverager,
-                            averager_rank=32,
-                            min_compression_ratio=0.5,
-                        )
-                        if self.power_sgd
-                        else GradientAverager,
-                        grad_compression=compression
-                        if self.optimize_memory
-                        else NoCompression(),
-                        state_averaging_compression=compression
-                        if self.optimize_memory
-                        else NoCompression(),
-                        verbose=True,
-                        endpoint=self.is_server,
-                        host=self.host if self.is_server else self._peer_host,
-                        port=self.port if self.is_server else self._peer_port,
-                        retry_endpoint_sleep_duration=20,  # cloud might take longer to spin up works
-                    ),
+                kwargs["precision"] = 16 if self.optimize_memory else 32
+
+                kwargs["strategy"] = CollaborativeStrategy(
+                    target_batch_size=self.batch_size,
+                    delay_state_averaging=self.optimize_communication,
+                    delay_optimizer_step=self.optimize_communication,
+                    offload_optimizer=self.optimize_communication,
+                    reuse_grad_buffers=self.optimize_memory,
+                    # averaging_timeout=averaging_timeout,
+                    # allreduce_timeout=allreduce_timeout,
+                    # Use PowerSGD to reduce communication overhead
+                    grad_averager_factory=partial(
+                        PowerSGDGradientAverager,
+                        averager_rank=32,
+                        min_compression_ratio=0.5,
+                    )
+                    if self.power_sgd
+                    else GradientAverager,
+                    grad_compression=compression
+                    if self.optimize_memory
+                    else NoCompression(),
+                    state_averaging_compression=compression
+                    if self.optimize_memory
+                    else NoCompression(),
+                    verbose=True,
+                    endpoint=self.is_server,
+                    peer_endpoint=f"{self.peer_host}:{self.peer_port}"
+                    if not self.is_server
+                    else None,
+                    host=self.host,
+                    port=self.port,
+                    retry_endpoint_sleep_duration=20,  # cloud might take longer to spin up works
                 )
             kwargs["accelerator"] = "auto"
             kwargs["devices"] = [self._device] if not self.debug else 1
@@ -157,10 +166,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
             return {}, args, kwargs
 
         tracer = super().configure_tracer()
-        if self.debug:
-            tracer.add_traced(pl.Trainer, "__init__", pre_fn=trainer_pre_fn)
-        else:
-            tracer.add_traced(Trainer, "__init__", pre_fn=trainer_pre_fn)
+        tracer.add_traced(pl.Trainer, "__init__", pre_fn=trainer_pre_fn)
         return tracer
 
     def run_environment_check(self):
@@ -171,6 +177,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.success = True
             self.cuda = True
             self.memory = True
+            self.linux = True
+            self.python = True
             self.internet = True
             # todo: hard coded here
             self.bandwidth = f"{1024:.1f}" + "MBit/s"
@@ -194,8 +202,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.success = setup.successful()
         print("Finished environment check")
 
-    @property
-    def public_host(self):
+    def retrieve_public_host(self):
         request = requests.get("https://api.ipify.org")
         request.raise_for_status()
         address = request.text

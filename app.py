@@ -26,47 +26,55 @@ class TrainFlow(LightningFlow):
         self.discovered_devices = EnvironmentChecker.local_devices()
         self.local_devices_available = self.discovered_devices > 0
         self.logs = None
+        self.start_multi_process = False
 
     def run(self):
         if self.train_work_logs:
             # todo: we only look at the logs from the first work
             self.logs = self.train_work_logs
         if self.start_setup:
-            self._start_train_works()
+            self._start_initial_train_work()
+            self.start_multi_process = self.devices > 1
             self.start_setup = False
+        if self.start_multi_process:
+            if self.work_0.peer_host:
+                for device in range(1, self.devices):
+                    self._start_work(device)
+                self.start_multi_process = False
 
     @property
     def train_work_logs(self) -> Optional[str]:
         if hasattr(self, "work_0"):
             return self.work_0.logs
 
-    def _start_train_works(self):
-        # dynamically create the works to run. We run one for reach process.
-        for x in range(int(self.devices)):
-            # this is current way of creating works dynamically.
-            # we have to assign it to the module.
-            if not hasattr(self, f"work_{x}"):
-                setattr(
-                    self,
-                    f"work_{x}",
-                    CollaborativeLightningRunner(
-                        script_path="train.py",
-                        run_once=False,
-                        parallel=True,
-                        debug=self.debug,
-                        cloud_compute=CloudCompute(name="gpu"),
-                    ),
-                )
-            getattr(self, f"work_{x}").run(
-                root_flow_cuda_available=self.local_devices_available,
-                device=x,
-                server=(not self.invite_link) and (x == 0),
-                invite_link=self.invite_link,
-                power_sgd=self.power_sgd,
-                optimize_memory=self.optimize_memory,
-                optimize_communication=self.optimize_communication,
-                batch_size=self.batch_size,
+    def _start_initial_train_work(self):
+        self._start_work(device=0)
+
+    def _start_work(self, device):
+        if not hasattr(self, f"work_{device}"):
+            setattr(
+                self,
+                f"work_{device}",
+                CollaborativeLightningRunner(
+                    script_path="train.py",
+                    run_once=False,
+                    parallel=True,
+                    debug=self.debug,
+                    cloud_compute=CloudCompute(name="gpu"),
+                ),
             )
+        getattr(self, f"work_{device}").run(
+            root_flow_cuda_available=self.local_devices_available,
+            device=device,
+            server=(not self.invite_link) and (device == 0),
+            invite_link=self.invite_link,
+            power_sgd=self.power_sgd,
+            optimize_memory=self.optimize_memory,
+            optimize_communication=self.optimize_communication,
+            batch_size=self.batch_size,
+            work_0_host=self.work_0.peer_host if device != 0 else None,
+            work_0_port=self.work_0.peer_port if device != 0 else None,
+        )
 
 
 class ReactUI(LightningFlow):

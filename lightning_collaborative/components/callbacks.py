@@ -23,6 +23,8 @@ class DebugGlobalState(GlobalTrainingProgress):
         if self.samples_accumulated >= self.target_batch_size:
             self.epoch += 1
             self.samples_accumulated = 0
+            self.eta_next_epoch = time.time()
+            self.next_fetch_time = time.time()
 
 
 class CollaborativeProgressTracker(Callback):
@@ -54,13 +56,19 @@ class CollaborativeProgressTracker(Callback):
     @property
     def progress_state(self) -> dict:
         state = self.global_state
-        s = time.gmtime(time.time())
+        try:
+            s = time.gmtime(state.eta_next_epoch - time.time())
+            s = time.strftime("%H:%M:%S", s)
+            print("parsed", s)
+        except:  # noqa: E722
+            print("could not parse", state.eta_next_epoch)
+            s = "-"
         return {
             "progress": int(
                 (state.samples_accumulated / state.target_batch_size) * 100
             ),
             "epoch": state.epoch,
-            "eta": time.strftime("%H:%M:%S", s),
+            "eta": s,
             "peers": state.num_peers,
         }
 
