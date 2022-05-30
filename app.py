@@ -24,6 +24,7 @@ class TrainFlow(LightningFlow):
         self.batch_size = None
         self.start_setup = False
         self.discovered_devices = EnvironmentChecker.local_devices()
+        self.local_devices_available = self.discovered_devices > 0
         self.logs = None
 
     def run(self):
@@ -57,6 +58,7 @@ class TrainFlow(LightningFlow):
                     ),
                 )
             getattr(self, f"work_{x}").run(
+                root_flow_cuda_available=self.local_devices_available,
                 device=x,
                 server=(not self.invite_link) and (x == 0),
                 invite_link=self.invite_link,

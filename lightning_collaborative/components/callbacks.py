@@ -11,6 +11,7 @@ from hivemind.optim.progress_tracker import GlobalTrainingProgress
 from lightning.storage import Path
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ProgressBarBase
+from pytorch_lightning.callbacks.progress.base import get_standard_metrics
 from pytorch_lightning.loggers import TensorBoardLogger
 
 _log = logging.getLogger(__name__)
@@ -28,11 +29,10 @@ class DebugGlobalState(GlobalTrainingProgress):
 class CollaborativeProgressTracker(Callback):
     """This tracks the global state."""
 
-    def __init__(self, work, debug: bool, refresh_rate: int = 1) -> None:
+    def __init__(self, work, debug: bool) -> None:
         super().__init__()
         self.work = work
         self.debug = debug
-        self.refresh_rate = refresh_rate
         self.is_enabled = False
         self._state = ProgressBarState()
         self._trainer = None
@@ -72,6 +72,46 @@ class CollaborativeProgressTracker(Callback):
             self.state.increment()
             return self.state
         return self.hivemind_optimizer.tracker.global_progress
+
+    @property
+    def hivemind_optimizer(self) -> hivemind.Optimizer:
+        return self._trainer.optimizers[0]
+
+    def on_fit_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        self._trainer = trainer
+
+
+class TrainMetrics(Callback):
+    def __init__(self, work, debug: bool) -> None:
+        super().__init__()
+        self.work = work
+        self.debug = debug
+        self._trainer = None
+        self._current_epoch = -1
+
+    def on_fit_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        self._trainer = trainer
+
+    def on_train_batch_end(
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs,
+        batch,
+        batch_idx: int,
+    ) -> None:
+        if self.debug:
+            metrics = get_standard_metrics(trainer, pl_module)
+            self.work.loss = metrics["loss"]
+            return
+        if self.hivemind_optimizer.local_epoch != self._current_epoch:
+            metrics = get_standard_metrics(trainer, pl_module)
+            self.work.loss = metrics["loss"]
+            self._current_epoch = self.hivemind_optimizer.local_epoch
 
     @property
     def hivemind_optimizer(self) -> hivemind.Optimizer:

@@ -55,6 +55,17 @@ function Progress(props) {
               </Container>
             </Card>
           </Grid>
+          <Grid item xs={6}>
+            <Card sx={{ p: 2, display: 'flex', mb: 1, mt: 2, flexDirection: 'column', background: "transparent", borderRadius: 2, border: 1, borderColor: "#ffffff44", boxShadow: '0' }}>
+              <Title><Typography variant="h6" sx={{ color: 'white', letterSpacing: 3 }}>METRICS</Typography></Title>
+              <Container disableGutters id="left" sx={{ display: 'flex', flexDirection: 'row',  }}>
+                  <Container disableGutters sx={{pl : 0, pr: 2}}>
+                    <Title><Typography variant="caption" sx={{ color: 'white' }}>TRAINING LOSS</Typography></Title>
+                    <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.loss}</Typography></Title>
+                  </Container>
+              </Container>
+            </Card>
+          </Grid>
         </Grid>
       </Paper>
     </React.Fragment>
@@ -64,9 +75,10 @@ function Progress(props) {
 export default function Metrics(props) {
 
   const [progress, setProgress] = React.useState(0);
-  const [epoch, setEpoch] = React.useState(0);
-  const [peers, setPeers] = React.useState(0);
-  const [eta, setEta] = React.useState('00:00:00');
+  const [epoch, setEpoch] = React.useState('-');
+  const [peers, setPeers] = React.useState('-');
+  const [eta, setEta] = React.useState('-');
+  const [loss, setLoss] = React.useState('-');
 
   var lightningState = props.lightningState;
 
@@ -78,6 +90,9 @@ export default function Metrics(props) {
         setEpoch(work_state.progress_state.epoch);
         setEta(work_state.progress_state.eta);
         setPeers(work_state.progress_state.peers);
+        if (work_state.loss) {
+          setLoss(work_state.loss);
+        }
       }
     }
   }, [lightningState]);
@@ -92,7 +107,7 @@ export default function Metrics(props) {
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           &#8203;
         </Typography>
-        {Progress({eta, progress, epoch, peers})}
+        {Progress({eta, progress, epoch, peers, loss})}
         <Card sx={{ borderRadius: 2, height: "100%" }}>
           <CardContent sx={{ p: 0, height: "100%", '&:last-child': { pb: 0 }, backgroundColor: '#282a36' }}>
             <Box sx={{ height: "300px", overflowY: "auto", width: '100%', pb: 0, backgroundColor: '#282a36' }}>

@@ -52,10 +52,6 @@ class EnvironmentChecker:
         except:  # noqa: E722
             return False
 
-    def setup_python_environment(self):
-        # todo: we can get rid of this probably
-        return True
-
     def sufficient_memory(self):
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
 
@@ -147,4 +143,4 @@ class EnvironmentChecker:
     def local_devices(cls):
         if torch.cuda.is_available():
             return torch.cuda.device_count()
-        return 1  # todo this should be set to None?
+        return 0  # todo this should be set to None?

@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 import pytorch_lightning as pl
 import requests
+import torch
 from flash import Trainer
 from hivemind import (
     Float16Compression,
@@ -22,6 +23,7 @@ from lightning_collaborative.components.callbacks import (
     CollaborativeProgressBar,
     CollaborativeProgressTracker,
     PLAppArtifactsTracker,
+    TrainMetrics,
 )
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 
@@ -29,8 +31,9 @@ from lightning_collaborative.components.env_checker import EnvironmentChecker
 class CollaborativeLightningRunner(TracerPythonScript):
     def __init__(self, script_path: Union[str, Path], debug: bool, **kwargs):
         super().__init__(script_path, **kwargs)
-        self.logs = ""
+        self._running_on_cloud = None
         self._device = None
+        self.logs = ""
         self.debug = debug
         self._peer_host = None
         self._peer_port = None
@@ -54,6 +57,54 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.is_server = None
         self.progress_state = None
         self.log_dir = None
+        self.loss = None
+
+    def run(
+        self,
+        server: bool,
+        invite_link: Optional[str],
+        power_sgd: bool,
+        optimize_communication: bool,
+        optimize_memory: bool,
+        batch_size: int,
+        device: int,
+        root_flow_cuda_available: bool,
+    ) -> None:
+        # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
+        self._running_on_cloud = (
+            not root_flow_cuda_available and torch.cuda.is_available()
+        )
+        self._device = 0 if self._running_on_cloud else device
+
+        self.run_environment_check()
+        if self.success:
+            self.training_started = True
+            if self.debug:
+                print("Swapping to dummy train file.")
+                self.script_path = "dummy_train.py"
+
+            self.batch_size = batch_size
+            self.optimize_communication = optimize_communication
+            self.optimize_memory = optimize_memory
+            self.power_sgd = power_sgd
+            self.is_server = server
+
+            host, port = self.public_host, self.port
+            if invite_link:
+                pieces = invite_link.split("?")
+                [host, port] = [pieces[1], pieces[2]]
+                host = host.replace("host=", "")
+                port = int(port.replace("port=", ""))
+            self.share_invite_link = self._generate_link(
+                host=host,
+                port=port,
+                power_sgd=power_sgd,
+                optimize_memory=optimize_memory,
+                optimize_communication=optimize_communication,
+                batch_size=batch_size,
+            )
+            self._peer_host, self._peer_port = host, port
+            return super().run()
 
     def configure_tracer(self) -> Tracer:
         def trainer_pre_fn(trainer, *args, **kwargs):
@@ -96,11 +147,12 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     ),
                 )
             kwargs["accelerator"] = "auto"
-            kwargs["devices"] = 1
+            kwargs["devices"] = [self._device] if not self.debug else 1
             kwargs["callbacks"] = kwargs.get("callbacks", []) + [
                 CollaborativeProgressTracker(self, self.debug),
                 CollaborativeProgressBar(self),
                 PLAppArtifactsTracker(self),
+                TrainMetrics(self, self.debug),
             ]
             return {}, args, kwargs
 
@@ -111,56 +163,25 @@ class CollaborativeLightningRunner(TracerPythonScript):
             tracer.add_traced(Trainer, "__init__", pre_fn=trainer_pre_fn)
         return tracer
 
-    def run(
-        self,
-        server: bool,
-        invite_link: Optional[str],
-        device: int,
-        power_sgd: bool,
-        optimize_communication: bool,
-        optimize_memory: bool,
-        batch_size: int,
-    ) -> None:
-
-        self.run_environment_check()
-        if self.success:
-            self.training_started = True
-            if self.debug:
-                print("Swapping to dummy train file.")
-                self.script_path = "dummy_train.py"
-
-            self.batch_size = batch_size
-            self.optimize_communication = optimize_communication
-            self.optimize_memory = optimize_memory
-            self.power_sgd = power_sgd
-            self.is_server = server
-
-            host, port = self.public_host, self.port
-            if invite_link:
-                pieces = invite_link.split("?")
-                [host, port] = [pieces[1], pieces[2]]
-                host = host.replace("host=", "")
-                port = int(port.replace("port=", ""))
-            self.share_invite_link = self._generate_link(
-                host=host,
-                port=port,
-                power_sgd=power_sgd,
-                optimize_memory=optimize_memory,
-                optimize_communication=optimize_communication,
-                batch_size=batch_size,
-            )
-            self._peer_host, self._peer_port = host, port
-            return super().run()
-
     def run_environment_check(self):
         print("Starting environment check")
         setup = EnvironmentChecker(debug=self.debug)
+        if self._running_on_cloud:
+            print("Running on cloud, skipping environment check")
+            self.success = True
+            self.cuda = True
+            self.memory = True
+            self.internet = True
+            # todo: hard coded here
+            self.bandwidth = f"{1024:.1f}" + "MBit/s"
+            self.current_memory = (
+                "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
+            )
+            print("Finished environment check")
+            return
         self.linux = setup.check_linux()
-        # skip requirements install if in debug mode
-        if self.debug:
-            self.python = True
-        else:
-            self.python = setup.setup_python_environment()
+        # todo: we should remove this check
+        self.python = True
         self.discovered_devices = setup.check_cuda_devices_available()
         self.cuda = self.discovered_devices > 0
         self.internet = setup.sufficient_internet()
