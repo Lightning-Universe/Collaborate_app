@@ -137,7 +137,7 @@ class EnvironmentChecker:
     def successful(self):
         if self.debug:
             return True
-        return self.setup_python_environment() and self.check_linux()
+        return self.check_linux()
 
     @classmethod
     def local_devices(cls):

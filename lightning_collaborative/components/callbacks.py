@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import time
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ProgressBarBase
 from pytorch_lightning.callbacks.progress.base import get_standard_metrics
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.strategies import CollaborativeStrategy
 
 _log = logging.getLogger(__name__)
 
@@ -52,6 +54,21 @@ class CollaborativeProgressTracker(Callback):
         self, trainer, pl_module, outputs, batch, batch_idx: int
     ) -> None:
         self.work.progress_state = self.progress_state
+        if self.work.peers is None:
+            self.work.peers = self.peers
+
+    @property
+    def peers(self):
+        if self.debug:
+            return ["fake peers 1", "fake peer 2"]
+        strategy: CollaborativeStrategy = self._trainer.strategy
+        dht = strategy.dht
+        visible_addresses = [
+            str(a)
+            for a in dht.get_visible_maddrs()
+            if not ipaddress.ip_address(a.values()[0]).is_loopback
+        ]
+        return visible_addresses
 
     @property
     def progress_state(self) -> dict:
@@ -59,9 +76,7 @@ class CollaborativeProgressTracker(Callback):
         try:
             s = time.gmtime(state.eta_next_epoch - time.time())
             s = time.strftime("%H:%M:%S", s)
-            print("parsed", s)
         except:  # noqa: E722
-            print("could not parse", state.eta_next_epoch)
             s = "-"
         return {
             "progress": int(

@@ -1,7 +1,6 @@
-import json
 from functools import partial
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytorch_lightning as pl
 import requests
@@ -57,19 +56,19 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.progress_state = None
         self.log_dir = None
         self.loss = None
+        self.peers = None
+        self.host_maddrs = None
 
     def run(
         self,
         server: bool,
-        invite_link: Optional[str],
+        peers: Optional[List[str]],
         power_sgd: bool,
         optimize_communication: bool,
         optimize_memory: bool,
         batch_size: int,
         device: int,
         root_flow_cuda_available: bool,
-        work_0_host: Optional[str],
-        work_0_port: Optional[int],
     ) -> None:
         # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
         self._running_on_cloud = (
@@ -89,28 +88,13 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.optimize_memory = optimize_memory
             self.power_sgd = power_sgd
             self.is_server = server
-
-            host, port = self.retrieve_public_host(), self.port
-            if invite_link:
-                # use the invite link host/port
-                pieces = invite_link.split("?")
-                [host, port] = [pieces[1], pieces[2]]
-                host = host.replace("host=", "")
-                port = int(port.replace("port=", ""))
-            elif not server and work_0_host:
+            if self.is_server:
                 # use the first work that was spun up host as we assume that's the main node.
-                host, port = work_0_host, work_0_port
-
-            self.share_invite_link = self._generate_link(
-                host=host,
-                port=port,
-                power_sgd=power_sgd,
-                optimize_memory=optimize_memory,
-                optimize_communication=optimize_communication,
-                batch_size=batch_size,
-            )
-            self.peer_host, self.peer_port = host, port
-            print("SET THE PORTS", self.peer_host, self.peer_port)
+                self.host_maddrs = [
+                    f"/ip4/{self.host}/tcp/{self.port}",
+                    f"/ip4/{self.host}/udp/{self.port}/quic",
+                ]
+            self.peers = peers
             return super().run()
 
     def configure_tracer(self) -> Tracer:
@@ -130,8 +114,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     delay_optimizer_step=self.optimize_communication,
                     offload_optimizer=self.optimize_communication,
                     reuse_grad_buffers=self.optimize_memory,
-                    # averaging_timeout=averaging_timeout,
-                    # allreduce_timeout=allreduce_timeout,
+                    averaging_timeout=300,
+                    allreduce_timeout=300,
                     # Use PowerSGD to reduce communication overhead
                     grad_averager_factory=partial(
                         PowerSGDGradientAverager,
@@ -147,13 +131,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     if self.optimize_memory
                     else NoCompression(),
                     verbose=True,
-                    endpoint=self.is_server,
-                    peer_endpoint=f"{self.peer_host}:{self.peer_port}"
-                    if not self.is_server
-                    else None,
-                    host=self.host,
-                    port=self.port,
-                    retry_endpoint_sleep_duration=20,  # cloud might take longer to spin up works
+                    initial_peers=self.peers,
+                    host_maddrs=self.host_maddrs,
                 )
             kwargs["accelerator"] = "auto"
             kwargs["devices"] = [self._device] if not self.debug else 1
@@ -207,14 +186,3 @@ class CollaborativeLightningRunner(TracerPythonScript):
         request.raise_for_status()
         address = request.text
         return address
-
-    def _generate_link(
-        self, host, port, power_sgd, optimize_memory, optimize_communication, batch_size
-    ):
-        config = dict(
-            powerSGD=power_sgd,
-            optimizeMemory=optimize_memory,
-            optimizeCommunication=optimize_communication,
-            batchSize=batch_size,
-        )
-        return f"collaborative?host={host}?port={port}?config={json.dumps(config)}"

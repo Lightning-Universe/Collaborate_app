@@ -1992,17 +1992,17 @@ _c10 = Setup;
 function validLink(text) {
   var pieces = text.split('?');
 
-  if (pieces.length !== 4) {
+  if (pieces.length !== 3) {
     return false;
   }
 
-  var [host, port, config] = [pieces[1], pieces[2], pieces[3]];
+  var [peers, config] = [pieces[1], pieces[2]];
 
   function checkString(string, query) {
     return string.search(query) === 0;
   }
 
-  if (checkString(host, "host=") && checkString(port, "port=") && checkString(config, "config=")) {
+  if (checkString(config, "config=")) {
     return true;
   } else {
     return false;
@@ -2011,7 +2011,7 @@ function validLink(text) {
 
 function parseLink(text) {
   var pieces = text.split('?');
-  var config = pieces[3];
+  var config = pieces[2];
   var config = config.replace('config=', '');
   var config = JSON.parse(config);
   return config;
@@ -2523,7 +2523,7 @@ function Train(props) {
   const [inviteText, setInviteText] = react__WEBPACK_IMPORTED_MODULE_0__.useState('');
   const [shareInviteLink, setShareInviteLink] = react__WEBPACK_IMPORTED_MODULE_0__.useState('');
   const [deviceState, setDeviceState] = react__WEBPACK_IMPORTED_MODULE_0__.useState(1);
-  const [devices, setDevices] = react__WEBPACK_IMPORTED_MODULE_0__.useState(1);
+  const [devices, setDevices] = react__WEBPACK_IMPORTED_MODULE_0__.useState(8);
   const [batchSize, setBatchSize] = react__WEBPACK_IMPORTED_MODULE_0__.useState(1024);
   const [powerSGD, setPowerSGD] = react__WEBPACK_IMPORTED_MODULE_0__.useState(false);
   const [optimizeCommunication, setOptimizeCommunication] = react__WEBPACK_IMPORTED_MODULE_0__.useState(false);
@@ -2542,7 +2542,7 @@ function Train(props) {
   let updateLightningState = props.updateLightningState;
   react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
     if (lightningState) {
-      var _lightningState$flows, _lightningState$flows2, _lightningState$flows3;
+      var _lightningState$flows, _lightningState$flows2;
 
       setStateReceived(true);
       let checks = (_lightningState$flows = lightningState.flows.train_flow.works.work_0) === null || _lightningState$flows === void 0 ? void 0 : _lightningState$flows.vars;
@@ -2585,8 +2585,8 @@ function Train(props) {
         setFlowRunning(true);
       }
 
-      if ((_lightningState$flows3 = lightningState.flows.train_flow.works.work_0) !== null && _lightningState$flows3 !== void 0 && _lightningState$flows3.vars.share_invite_link) {
-        var shareInviteLink = lightningState.flows.train_flow.works.work_0.vars.share_invite_link;
+      if (lightningState.flows.train_flow.vars.share_link) {
+        var shareInviteLink = lightningState.flows.train_flow.vars.share_link;
         setShareInviteLink(shareInviteLink);
       }
     }
@@ -2737,7 +2737,7 @@ function Train(props) {
   }, this);
 }
 
-_s(Train, "i6QQO7Dq4p1cAcUmCXwK1NEidLI=");
+_s(Train, "9MLzlNPWjSad+2HDkCPQH+D9uNI=");
 
 _c14 = Train;
 
@@ -89666,7 +89666,7 @@ function combine(array, callback) {
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("bc5a01bc46aa518b5a8c")
+/******/ 		__webpack_require__.h = () => ("aa9079f6ec87995a1dea")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */

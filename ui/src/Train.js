@@ -238,15 +238,15 @@ const Setup = (props) => {
 function validLink(text) {
   var pieces = text.split('?');
 
-  if (pieces.length !== 4) {
+  if (pieces.length !== 3) {
     return false;
   }
-  var [host, port, config] = [pieces[1], pieces[2], pieces[3]];
+  var [peers, config] = [pieces[1], pieces[2]];
 
   function checkString(string, query) {
     return (string.search(query) === 0);
   }
-  if (checkString(host, "host=") && checkString(port, "port=") && checkString(config, "config=")) {
+  if (checkString(config, "config=")) {
     return true;
   } else {
     return false;
@@ -255,7 +255,7 @@ function validLink(text) {
 
 function parseLink(text) {
   var pieces = text.split('?');
-  var config = pieces[3];
+  var config = pieces[2];
   var config = config.replace('config=', '');
   var config = JSON.parse(config);
   return config
@@ -422,7 +422,7 @@ export default function Train(props) {
   const [inviteText, setInviteText] = React.useState('')
   const [shareInviteLink, setShareInviteLink] = React.useState('')
   const [deviceState, setDeviceState] = React.useState(1)
-  const [devices, setDevices] = React.useState(1)
+  const [devices, setDevices] = React.useState(8)
   const [batchSize, setBatchSize] = React.useState(1024)
   const [powerSGD, setPowerSGD] = React.useState(false)
   const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)
@@ -481,8 +481,8 @@ export default function Train(props) {
         setEnableTrainState(true);
         setFlowRunning(true);
       }
-      if (lightningState.flows.train_flow.works.work_0?.vars.share_invite_link) {
-        var shareInviteLink = lightningState.flows.train_flow.works.work_0.vars.share_invite_link;
+      if (lightningState.flows.train_flow.vars.share_link) {
+        var shareInviteLink = lightningState.flows.train_flow.vars.share_link;
         setShareInviteLink(shareInviteLink);
       }
     }

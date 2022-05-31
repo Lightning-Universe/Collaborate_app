@@ -155,6 +155,7 @@
     "react-syntax-highlighter_languages_refractor_yaml.js": "/static/js/react-syntax-highlighter_languages_refractor_yaml.chunk.js",
     "index.html": "/index.html",
     "bundle.js.map": "/static/js/bundle.js.map",
+    "main.hot-update.js.map": "/main.dedc297778014b59b894.hot-update.js.map",
     "refractor-core-import.chunk.js.map": "/static/js/react-syntax-highlighter/refractor-core-import.chunk.js.map",
     "react-syntax-highlighter_languages_refractor_abap.chunk.js.map": "/static/js/react-syntax-highlighter_languages_refractor_abap.chunk.js.map",
     "react-syntax-highlighter_languages_refractor_actionscript.chunk.js.map": "/static/js/react-syntax-highlighter_languages_refractor_actionscript.chunk.js.map",
@@ -309,6 +310,7 @@
     "react-syntax-highlighter_languages_refractor_yaml.chunk.js.map": "/static/js/react-syntax-highlighter_languages_refractor_yaml.chunk.js.map"
   },
   "entrypoints": [
-    "static/js/bundle.js"
+    "static/js/bundle.js",
+    "main.dedc297778014b59b894.hot-update.js"
   ]
 }
