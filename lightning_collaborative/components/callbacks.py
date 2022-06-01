@@ -1,4 +1,3 @@
-import ipaddress
 import logging
 import time
 from queue import Queue
@@ -40,10 +39,11 @@ class CollaborativeProgressTracker(Callback):
     def peers(self):
         strategy: CollaborativeStrategy = self._trainer.strategy
         dht = strategy.dht
+        global_ip = hivemind.utils.networking.choose_ip_address(
+            dht.get_visible_maddrs()
+        )
         visible_addresses = [
-            str(a)
-            for a in dht.get_visible_maddrs()
-            if not ipaddress.ip_address(a.values()[0]).is_loopback
+            str(a) for a in dht.get_visible_maddrs() if str(global_ip) in str(a)
         ]
         return visible_addresses
 

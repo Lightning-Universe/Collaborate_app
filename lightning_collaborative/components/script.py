@@ -34,7 +34,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs
     ):
         super().__init__(script_path, **kwargs)
-        self._running_on_cloud = None
+        self.running_on_cloud = None
         self._device = None
         self.logs = ""
         self.skip_environment_check = skip_environment_check
@@ -76,10 +76,10 @@ class CollaborativeLightningRunner(TracerPythonScript):
         root_flow_cuda_available: bool,
     ) -> None:
         # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
-        self._running_on_cloud = (
+        self.running_on_cloud = (
             not root_flow_cuda_available and torch.cuda.is_available()
         )
-        self._device = 0 if self._running_on_cloud else device
+        self._device = 0 if self.running_on_cloud else device
 
         self.run_environment_check()
         if self.success:
@@ -151,7 +151,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
     def run_environment_check(self):
         print("Starting environment check")
         setup = EnvironmentChecker(skip_environment_check=self.skip_environment_check)
-        if self._running_on_cloud:
+        if self.running_on_cloud:
             print("Running on cloud, skipping environment check")
             self.success = True
             self.cuda = True
@@ -188,6 +188,9 @@ class CollaborativeLightningRunner(TracerPythonScript):
         return address
 
     def _run_tracer(self, init_globals):
+        if self.cuda:
+            return super()._run_tracer(init_globals)
+
         def run_trace():
             asyncio.set_event_loop(asyncio.new_event_loop())
             sys.argv = [self.script_path]
