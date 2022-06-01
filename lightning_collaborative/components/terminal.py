@@ -17,8 +17,7 @@ class CollaborativeTerminal:
             self.batch_size = config["batchSize"]
             print("set variables based on invite.")
         self.devices = input("How many local devices do you want to use? [default 1]")
-        if self.devices == "":
-            self.devices = 1
+        self.devices = 1 if self.devices == "" else int(self.devices)
 
         if self.invite_link == "":
             should_set_default = input(
