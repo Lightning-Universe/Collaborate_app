@@ -9,12 +9,14 @@ from lightning.storage import Path
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.script import CollaborativeLightningRunner
 from lightning_collaborative.components.tensorboard import TensorBoard
+from lightning_collaborative.components.terminal import CollaborativeTerminal
 
 
 class TrainFlow(LightningFlow):
-    def __init__(self, skip_environment_check: bool):
+    def __init__(self, skip_environment_check: bool, terminal_mode: bool):
         super().__init__()
         self.skip_environment_check = skip_environment_check
+        self.terminal_mode = terminal_mode
         self.invite_link = None
         self.share_link = None
         self.devices = None
@@ -43,10 +45,15 @@ class TrainFlow(LightningFlow):
                 optimizeCommunication=self.optimize_communication,
                 batchSize=self.batch_size,
             )
-            return f"collaborative?{','.join(self.work_0.peers)}?config={json.dumps(config)}"
-        return "Waiting for training to begin."
+            self.share_link = f"collaborative?{','.join(self.work_0.peers)}?config={json.dumps(config)}"
+            print(
+                f"Share this link with others to join your collaborative training session: {self.share_link}"
+            )
 
     def run(self):
+        if self.terminal_mode:
+            self._run_terminal_mode()
+            self.terminal_mode = False
         if self.train_work_logs:
             # todo: we only look at the logs from the first work
             self.logs = self.train_work_logs
@@ -63,7 +70,19 @@ class TrainFlow(LightningFlow):
                 for device in range(1, self.devices):
                     self._start_work(device)
                 self.start_multi_process = False
-        self.share_link = self._set_share_link()
+        if not self.share_link:
+            self._set_share_link()
+
+    def _run_terminal_mode(self):
+        terminal = CollaborativeTerminal()
+        terminal.get_user_config()
+        self.invite_link = terminal.invite_link
+        self.devices = terminal.devices
+        self.power_sgd = terminal.power_sgd
+        self.optimize_memory = terminal.optimize_memory
+        self.optimize_communication = terminal.optimize_communication
+        self.batch_size = terminal.batch_size
+        self.start_setup = True
 
     @property
     def train_work_logs(self) -> Optional[str]:
@@ -107,8 +126,16 @@ class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
         skip_environment_check = os.environ.get("SKIP_ENV_CHECK", str(0)) == str(1)
+        self.terminal_mode = os.environ.get("TERMINAL_MODE", str(0)) == str(1)
+        if self.terminal_mode:
+            print(
+                "Started in terminal mode, give a few moments for the app to start up..."
+            )
         self.react_ui = ReactUI()
-        self.train_flow = TrainFlow(skip_environment_check=skip_environment_check)
+        self.train_flow = TrainFlow(
+            skip_environment_check=skip_environment_check,
+            terminal_mode=self.terminal_mode,
+        )
 
     def run(self):
         self.react_ui.run()
@@ -123,6 +150,8 @@ class RootFlow(LightningFlow):
                 self.logger_component.run()
 
     def configure_layout(self):
+        if self.terminal_mode:
+            return super().configure_layout()
         tabs = [{"name": "Train", "content": self.react_ui}]
         if hasattr(self, "logger_component"):
             tabs.extend(self.logger_component.configure_layout())

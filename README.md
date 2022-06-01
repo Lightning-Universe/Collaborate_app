@@ -25,6 +25,7 @@ Requires npm/node & yarn to be installed to create the build. We'll eventually s
 When working on the UI, the build will need to be re-built everytime you change something.
 
 ```
+npm i --legacy-peer-deps
 yarn build
 
 # alternative
@@ -32,20 +33,22 @@ yarn build
 yarn run dev
 ```
 
-You can also get around requirements and use our `dummy_train.py` script by passing an environment variable locally:
+You can also start the app in terminal only mode:
 
 ```
-DEBUG=1 lightning run app app.py
+TERMINAL_MODE=1 lightning run app app.py
+```
+
+You can skip the environment checks via an environment variable:
+
+```
+SKIP_ENV_CHECK=1 lightning run app app.py
 ```
 
 ## Known issues
 
-- Running in the cloud takes a considerable time to start. This is due to the re-installation of requirements.
 - The internet check isn't real all the time. Sometimes it disconnects for no reason.
-- Multiple GPUs are not supported. Will be supported before launch!
 - A very small model is training. This is parimily due to RAM restrictions.
-- I can’t seem to pass the link to a friend to train! The V0 has single GPU machine working (I know, not collaborative but a start).
-- UI is smaller when using cloud, this makes things look all funny.
 
 ## Hopeful goals
 
