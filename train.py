@@ -1,57 +1,32 @@
-import os
+import time
 
-import flash
-import torch
-from flash.core.data.utils import download_data
-from flash.text import TextClassificationData, TextClassifier
-from flash.text.classification.collate import TextClassificationCollate
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
-
-
-class TextClassificationCollateCustom(TextClassificationCollate):
-    def __post_init__(self):
-        super().__post_init__()
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-
-
-class TextClassifierCustom(TextClassifier):
-    def forward(self, batch):
-        result = super().forward(batch)
-        if isinstance(result, SequenceClassifierOutputWithPast):
-            result = result.logits
-        return result
-
+import pytorch_lightning as pl
+from lightning_transformers.task.nlp.language_modeling import (
+    LanguageModelingDataConfig,
+    LanguageModelingDataModule,
+    LanguageModelingTransformer,
+)
+from transformers import AutoTokenizer
 
 if __name__ == "__main__":
-    print("server", os.environ.get("PL_ENDPOINT"), flush=True)
-    print("host", os.environ.get("PL_HOST"), flush=True)
-    print("port", os.environ.get("PL_PORT"), flush=True)
-    print("peer_endpoint", os.environ.get("PL_PEER_ENDPOINT"), flush=True)
-    download_data("https://pl-flash-data.s3.amazonaws.com/imdb.zip", "./data/")
 
-    print("TORCH CUDA", torch.cuda.is_available())
+    class MyTransformer(LanguageModelingTransformer):
+        def training_step(self, batch, batch_idx):
+            time.sleep(0.5)
+            return super().training_step(batch, batch_idx)
 
-    datamodule = TextClassificationData.from_csv(
-        "review",
-        "sentiment",
-        train_file="data/imdb/train.csv",
-        val_file="data/imdb/valid.csv",
-        batch_size=1,
+    tokenizer = AutoTokenizer.from_pretrained(
+        pretrained_model_name_or_path="sshleifer/tiny-gpt2"
     )
+    model = MyTransformer(pretrained_model_name_or_path="sshleifer/tiny-gpt2")
+    dm = LanguageModelingDataModule(
+        cfg=LanguageModelingDataConfig(
+            batch_size=2,
+            dataset_name="wikitext",
+            dataset_config_name="wikitext-2-raw-v1",
+        ),
+        tokenizer=tokenizer,
+    )
+    trainer = pl.Trainer(max_epochs=100)
 
-    model = TextClassifierCustom(
-        backbone="sshleifer/tiny-gpt2",
-        labels=datamodule.labels,
-        learning_rate=1e-5,
-        max_length=512,
-    )
-    model.collate_fn = TextClassificationCollateCustom(
-        backbone=model.hparams.backbone, max_length=model.hparams.max_length
-    )
-    trainer = flash.Trainer(
-        max_epochs=100,
-        limit_val_batches=0,
-        limit_test_batches=0,
-        log_every_n_steps=1,
-    )
-    trainer.fit(model, datamodule=datamodule)
+    trainer.fit(model, dm)

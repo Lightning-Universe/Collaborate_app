@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 import time
-from dataclasses import dataclass
 from queue import Queue
 from typing import Optional
 
@@ -18,37 +17,16 @@ from pytorch_lightning.strategies import CollaborativeStrategy
 _log = logging.getLogger(__name__)
 
 
-@dataclass(frozen=False)
-class DebugGlobalState(GlobalTrainingProgress):
-    def increment(self):
-        self.samples_accumulated += 1
-        if self.samples_accumulated >= self.target_batch_size:
-            self.epoch += 1
-            self.samples_accumulated = 0
-            self.eta_next_epoch = time.time()
-            self.next_fetch_time = time.time()
-
-
 class CollaborativeProgressTracker(Callback):
     """This tracks the global state."""
 
-    def __init__(self, work, debug: bool) -> None:
+    def __init__(self, work) -> None:
         super().__init__()
         self.work = work
-        self.debug = debug
         self.is_enabled = False
         self._trainer = None
 
         self.epoch = 0
-        self.state = DebugGlobalState(
-            epoch=0,
-            samples_accumulated=0,
-            target_batch_size=512,
-            num_peers=5,
-            eta_next_epoch=time.time(),
-            next_fetch_time=time.time() + 100,
-            num_clients=5,
-        )
 
     def on_train_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx: int
@@ -56,11 +34,10 @@ class CollaborativeProgressTracker(Callback):
         self.work.progress_state = self.progress_state
         if self.work.peers is None:
             self.work.peers = self.peers
+        pl_module.log("num_peers", trainer.strategy.num_peers, on_step=True)
 
     @property
     def peers(self):
-        if self.debug:
-            return ["fake peers 1", "fake peer 2"]
         strategy: CollaborativeStrategy = self._trainer.strategy
         dht = strategy.dht
         visible_addresses = [
@@ -89,9 +66,6 @@ class CollaborativeProgressTracker(Callback):
 
     @property
     def global_state(self) -> GlobalTrainingProgress:
-        if self.debug:
-            self.state.increment()
-            return self.state
         return self.hivemind_optimizer.tracker.global_progress
 
     @property
@@ -105,10 +79,9 @@ class CollaborativeProgressTracker(Callback):
 
 
 class TrainMetrics(Callback):
-    def __init__(self, work, debug: bool) -> None:
+    def __init__(self, work) -> None:
         super().__init__()
         self.work = work
-        self.debug = debug
         self._trainer = None
         self._current_epoch = -1
 
@@ -125,10 +98,6 @@ class TrainMetrics(Callback):
         batch,
         batch_idx: int,
     ) -> None:
-        if self.debug:
-            metrics = get_standard_metrics(trainer, pl_module)
-            self.work.loss = metrics["loss"]
-            return
         if self.hivemind_optimizer.local_epoch != self._current_epoch:
             metrics = get_standard_metrics(trainer, pl_module)
             self.work.loss = metrics["loss"]

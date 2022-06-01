@@ -1,3 +1,6 @@
+import asyncio
+import multiprocessing
+import sys
 from functools import partial
 from pathlib import Path
 from typing import List, Optional, Union
@@ -27,12 +30,14 @@ from lightning_collaborative.components.env_checker import EnvironmentChecker
 
 
 class CollaborativeLightningRunner(TracerPythonScript):
-    def __init__(self, script_path: Union[str, Path], debug: bool, **kwargs):
+    def __init__(
+        self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs
+    ):
         super().__init__(script_path, **kwargs)
         self._running_on_cloud = None
         self._device = None
         self.logs = ""
-        self.debug = debug
+        self.skip_environment_check = skip_environment_check
         self.peer_host = None
         self.peer_port = None
         self._server = None
@@ -79,10 +84,6 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.run_environment_check()
         if self.success:
             self.training_started = True
-            if self.debug:
-                print("Swapping to dummy train file.")
-                self.script_path = "dummy_train.py"
-
             self.batch_size = batch_size
             self.optimize_communication = optimize_communication
             self.optimize_memory = optimize_memory
@@ -91,8 +92,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
             if self.is_server:
                 # use the first work that was spun up host as we assume that's the main node.
                 self.host_maddrs = [
-                    f"/ip4/{self.host}/tcp/{self.port}",
-                    f"/ip4/{self.host}/udp/{self.port}/quic",
+                    f"/ip4/0.0.0.0/tcp/{self.port}",
+                    f"/ip4/0.0.0.0/udp/{self.port}/quic",
                 ]
             self.peers = peers
             return super().run()
@@ -105,42 +106,41 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            if not self.debug:
-                kwargs["precision"] = 16 if self.optimize_memory else 32
+            kwargs["precision"] = 16 if self.optimize_memory else 32
 
-                kwargs["strategy"] = CollaborativeStrategy(
-                    target_batch_size=self.batch_size,
-                    delay_state_averaging=self.optimize_communication,
-                    delay_optimizer_step=self.optimize_communication,
-                    offload_optimizer=self.optimize_communication,
-                    reuse_grad_buffers=self.optimize_memory,
-                    averaging_timeout=300,
-                    allreduce_timeout=300,
-                    # Use PowerSGD to reduce communication overhead
-                    grad_averager_factory=partial(
-                        PowerSGDGradientAverager,
-                        averager_rank=32,
-                        min_compression_ratio=0.5,
-                    )
-                    if self.power_sgd
-                    else GradientAverager,
-                    grad_compression=compression
-                    if self.optimize_memory
-                    else NoCompression(),
-                    state_averaging_compression=compression
-                    if self.optimize_memory
-                    else NoCompression(),
-                    verbose=True,
-                    initial_peers=self.peers,
-                    host_maddrs=self.host_maddrs,
+            kwargs["strategy"] = CollaborativeStrategy(
+                target_batch_size=self.batch_size,
+                delay_state_averaging=self.optimize_communication,
+                delay_optimizer_step=self.optimize_communication,
+                offload_optimizer=self.optimize_communication,
+                reuse_grad_buffers=self.optimize_memory,
+                averaging_timeout=300,
+                allreduce_timeout=300,
+                # Use PowerSGD to reduce communication overhead
+                grad_averager_factory=partial(
+                    PowerSGDGradientAverager,
+                    averager_rank=32,
+                    min_compression_ratio=0.5,
                 )
+                if self.power_sgd
+                else GradientAverager,
+                grad_compression=compression
+                if self.optimize_memory
+                else NoCompression(),
+                state_averaging_compression=compression
+                if self.optimize_memory
+                else NoCompression(),
+                verbose=True,
+                initial_peers=self.peers,
+                host_maddrs=self.host_maddrs,
+            )
             kwargs["accelerator"] = "auto"
-            kwargs["devices"] = [self._device] if not self.debug else 1
+            kwargs["devices"] = [self._device] if torch.cuda.is_available() else 1
             kwargs["callbacks"] = kwargs.get("callbacks", []) + [
-                CollaborativeProgressTracker(self, self.debug),
+                CollaborativeProgressTracker(self),
                 CollaborativeProgressBar(self),
                 PLAppArtifactsTracker(self),
-                TrainMetrics(self, self.debug),
+                TrainMetrics(self),
             ]
             return {}, args, kwargs
 
@@ -150,7 +150,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
 
     def run_environment_check(self):
         print("Starting environment check")
-        setup = EnvironmentChecker(debug=self.debug)
+        setup = EnvironmentChecker(skip_environment_check=self.skip_environment_check)
         if self._running_on_cloud:
             print("Running on cloud, skipping environment check")
             self.success = True
@@ -166,17 +166,17 @@ class CollaborativeLightningRunner(TracerPythonScript):
             )
             print("Finished environment check")
             return
-        self.linux = setup.check_linux()
+        self.linux = setup.check_os()
         # todo: we should remove this check
         self.python = True
         self.discovered_devices = setup.check_cuda_devices_available()
         self.cuda = self.discovered_devices > 0
         self.internet = setup.sufficient_internet()
         self.memory = setup.sufficient_memory()
-        self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.current_memory = (
             "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
         )
+        self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         print("Finished environment check")
@@ -186,3 +186,15 @@ class CollaborativeLightningRunner(TracerPythonScript):
         request.raise_for_status()
         address = request.text
         return address
+
+    def _run_tracer(self, init_globals):
+        def run_trace():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            sys.argv = [self.script_path]
+            tracer = self.configure_tracer()
+            return tracer.trace(
+                self.script_path, *self.script_args, init_globals=init_globals
+            )
+
+        process = multiprocessing.Process(target=run_trace)
+        process.start()

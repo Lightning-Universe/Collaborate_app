@@ -12,9 +12,9 @@ from lightning_collaborative.components.tensorboard import TensorBoard
 
 
 class TrainFlow(LightningFlow):
-    def __init__(self, debug: bool):
+    def __init__(self, skip_environment_check: bool):
         super().__init__()
-        self.debug = debug
+        self.skip_environment_check = skip_environment_check
         self.invite_link = None
         self.share_link = None
         self.devices = None
@@ -82,7 +82,7 @@ class TrainFlow(LightningFlow):
                     script_path="train.py",
                     run_once=False,
                     parallel=True,
-                    debug=self.debug,
+                    skip_environment_check=self.skip_environment_check,
                     cloud_compute=CloudCompute(name="gpu"),
                 ),
             )
@@ -106,9 +106,9 @@ class ReactUI(LightningFlow):
 class RootFlow(LightningFlow):
     def __init__(self):
         super().__init__()
-        debug = os.environ.get("DEBUG", str(0)) == str(1)
+        skip_environment_check = os.environ.get("SKIP_ENV_CHECK", str(0)) == str(1)
         self.react_ui = ReactUI()
-        self.train_flow = TrainFlow(debug=debug)
+        self.train_flow = TrainFlow(skip_environment_check=skip_environment_check)
 
     def run(self):
         self.react_ui.run()
