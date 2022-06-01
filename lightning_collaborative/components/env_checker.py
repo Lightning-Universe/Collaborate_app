@@ -1,10 +1,28 @@
 import importlib
+import multiprocessing
 import platform
 import subprocess
 from typing import List
 from xml.etree import ElementTree
 
 import torch
+
+
+def _check_cuda_devices_available():
+    # todo: we assume the user has torch installed, this could not be the case
+    # maybe be a torch check instead of CUDA check
+    import torch
+
+    if not torch.cuda.is_available():
+        return 0
+
+    return torch.cuda.device_count()
+
+
+def _local_devices():
+    if torch.cuda.is_available():
+        return torch.cuda.device_count()
+    return 0  # todo this should be set to None?
 
 
 class EnvironmentChecker:
@@ -30,18 +48,12 @@ class EnvironmentChecker:
         return True
 
     def check_cuda_devices_available(self):
-        # todo: we assume the user has torch installed, this could not be the case
-        # maybe be a torch check instead of CUDA check
         if self.skip_environment_check:
             return 8
         if not self._check_package_installed("torch"):
             return 0
-        import torch
-
-        if not torch.cuda.is_available():
-            return 0
-
-        return torch.cuda.device_count()
+        with multiprocessing.Pool(1) as pool:
+            return pool.apply(_check_cuda_devices_available)
 
     def sufficient_internet(self):
         return True
@@ -141,6 +153,5 @@ class EnvironmentChecker:
 
     @classmethod
     def local_devices(cls):
-        if torch.cuda.is_available():
-            return torch.cuda.device_count()
-        return 0  # todo this should be set to None?
+        with multiprocessing.Pool(1) as pool:
+            return pool.apply(_local_devices)
