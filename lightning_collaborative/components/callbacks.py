@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from queue import Queue
 from typing import Optional
@@ -84,6 +85,8 @@ class TrainMetrics(Callback):
         self.work = work
         self._trainer = None
         self._current_epoch = -1
+        self.accumulated_samples = 0
+        self.epochs_contributed = 0
 
     def on_fit_start(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
@@ -98,14 +101,29 @@ class TrainMetrics(Callback):
         batch,
         batch_idx: int,
     ) -> None:
+        self.accumulated_samples += self.hivemind_optimizer.batch_size_per_step
         if self.hivemind_optimizer.local_epoch != self._current_epoch:
             metrics = get_standard_metrics(trainer, pl_module)
             self.work.loss = metrics["loss"]
+            if self._current_epoch >= 0:
+                # report once an epoch has been contributed to.
+                self.work.contribution = self.contribution
             self._current_epoch = self.hivemind_optimizer.local_epoch
+            self.epochs_contributed += 1
 
     @property
     def hivemind_optimizer(self) -> hivemind.Optimizer:
         return self._trainer.optimizers[0]
+
+    @property
+    def contribution(self) -> int:
+        return math.ceil(
+            (
+                self.accumulated_samples
+                / (self.hivemind_optimizer.target_batch_size * self.epochs_contributed)
+            )
+            * 100
+        )
 
 
 class CollaborativeProgressBar(ProgressBarBase):

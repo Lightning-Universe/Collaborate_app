@@ -504,7 +504,7 @@ export default function Train(props) {
           Lightning Collaborative
         </Typography>
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
-          Train collaboratively, using Lightning Flash to train a translation model.
+          Train collaboratively, using Lightning Transformers to train a language model.
         </Typography>
         {startTraining && stateReceived ? StopTrain({ lightningState, updateLightningState, shareInviteLink, setShareInviteLink, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState }) : null}
         {!startTraining && stateReceived ? Config({ flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize }) : null}

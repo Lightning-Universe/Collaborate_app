@@ -61,6 +61,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.progress_state = None
         self.log_dir = None
         self.loss = None
+        self.contribution = None
         self.peers = None
         self.host_maddrs = None
 
