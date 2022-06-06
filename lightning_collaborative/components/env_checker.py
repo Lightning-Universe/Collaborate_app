@@ -49,7 +49,7 @@ class EnvironmentChecker:
 
     def check_cuda_devices_available(self):
         if self.skip_environment_check:
-            return 8
+            return 0
         if not self._check_package_installed("torch"):
             return 0
         with multiprocessing.Pool(1) as pool:

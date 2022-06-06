@@ -15,6 +15,7 @@ if __name__ == "__main__":
             batch_size=2,
             dataset_name="wikitext",
             dataset_config_name="wikitext-2-raw-v1",
+            streaming=True,
         ),
         tokenizer=tokenizer,
     )

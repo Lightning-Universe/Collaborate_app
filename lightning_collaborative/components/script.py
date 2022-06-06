@@ -108,13 +108,14 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            kwargs["precision"] = 16 if self.optimize_memory else 32
-
+            # required for Mac support.
+            kwargs["precision"] = 32
             kwargs["strategy"] = CollaborativeStrategy(
                 target_batch_size=self.batch_size,
                 delay_state_averaging=self.optimize_communication,
-                delay_optimizer_step=self.optimize_communication,
-                offload_optimizer=self.optimize_communication,
+                # not supported for mac OS.
+                delay_optimizer_step=False,
+                offload_optimizer=False,
                 reuse_grad_buffers=self.optimize_memory,
                 averaging_timeout=300,
                 allreduce_timeout=300,
