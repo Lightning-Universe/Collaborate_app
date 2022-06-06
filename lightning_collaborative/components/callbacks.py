@@ -117,12 +117,18 @@ class TrainMetrics(Callback):
 
     @property
     def contribution(self) -> int:
-        return math.ceil(
-            (
-                self.accumulated_samples
-                / (self.hivemind_optimizer.target_batch_size * self.epochs_contributed)
-            )
-            * 100
+        return min(
+            math.ceil(
+                (
+                    self.accumulated_samples
+                    / (
+                        self.hivemind_optimizer.target_batch_size
+                        * self.epochs_contributed
+                    )
+                )
+                * 100
+            ),
+            100,
         )
 
 
