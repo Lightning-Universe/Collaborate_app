@@ -422,7 +422,7 @@ export default function Train(props) {
   const [inviteText, setInviteText] = React.useState('')
   const [shareInviteLink, setShareInviteLink] = React.useState('')
   const [deviceState, setDeviceState] = React.useState(1)
-  const [devices, setDevices] = React.useState(8)
+  const [devices, setDevices] = React.useState(1)
   const [batchSize, setBatchSize] = React.useState(1024)
   const [powerSGD, setPowerSGD] = React.useState(false)
   const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)

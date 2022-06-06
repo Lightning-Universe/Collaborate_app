@@ -74,10 +74,18 @@ class TrainFlow(LightningFlow):
                 self.start_multi_process = False
         if not self.share_link:
             self._set_share_link()
-        self.flow_running = (
-            hasattr(self, "work_0")
-            and self.work_0.status.stage == WorkStageStatus.RUNNING
-        )
+        self.flow_running = self._set_flow_running()
+
+    def _set_flow_running(self):
+        if not hasattr(self, "work_0"):
+            return False
+        if self.work_0.status.stage in (
+            WorkStageStatus.RUNNING,
+            WorkStageStatus.PENDING,
+            WorkStageStatus.NOT_STARTED,
+        ):
+            return True
+        return False
 
     def _run_terminal_mode(self):
         terminal = CollaborativeTerminal()
