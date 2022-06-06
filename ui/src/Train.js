@@ -21,7 +21,6 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CopyBlock, dracula } from "react-code-blocks";
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { useLightningState } from "./hooks/useLightningState";
 
 
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -239,15 +238,15 @@ const Setup = (props) => {
 function validLink(text) {
   var pieces = text.split('?');
 
-  if (pieces.length !== 4) {
+  if (pieces.length !== 3) {
     return false;
   }
-  var [host, port, config] = [pieces[1], pieces[2], pieces[3]];
+  var [peers, config] = [pieces[1], pieces[2]];
 
   function checkString(string, query) {
     return (string.search(query) === 0);
   }
-  if (checkString(host, "host=") && checkString(port, "port=") && checkString(config, "config=")) {
+  if (checkString(config, "config=")) {
     return true;
   } else {
     return false;
@@ -256,7 +255,7 @@ function validLink(text) {
 
 function parseLink(text) {
   var pieces = text.split('?');
-  var config = pieces[3];
+  var config = pieces[2];
   var config = config.replace('config=', '');
   var config = JSON.parse(config);
   return config
@@ -396,7 +395,7 @@ function StopTrain(props) {
         </Typography>
         <Card sx={{ borderRadius: 2 }}>
           <CardContentNoPadding>
-            <Box sx={{ overflowY: 'auto', width: '100%', pb: 0, backgroundColor: '#282a36' }}>
+            <Box sx={{ overflowY: 'scroll', width: '100%', pb: 0, backgroundColor: '#282a36' }}>
               <CopyBlock
                 text={props.shareInviteLink}
                 language={"bash"}
@@ -423,7 +422,7 @@ export default function Train(props) {
   const [inviteText, setInviteText] = React.useState('')
   const [shareInviteLink, setShareInviteLink] = React.useState('')
   const [deviceState, setDeviceState] = React.useState(1)
-  const [devices, setDevices] = React.useState(1)
+  const [devices, setDevices] = React.useState(8)
   const [batchSize, setBatchSize] = React.useState(1024)
   const [powerSGD, setPowerSGD] = React.useState(false)
   const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)
@@ -442,14 +441,19 @@ export default function Train(props) {
   const [bandwidth, setBandwidth] = React.useState('')
 
 
-  var logState = props.logState;
-  var setLogState = props.setLogState;
-
-  const { lightningState, updateLightningState } = useLightningState();
+  let logState = props.logState;
+  let setLogState = props.setLogState;
+  let lightningState = props.lightningState;
+  let updateLightningState = props.updateLightningState;
 
   React.useEffect(() => {
     if (lightningState) {
       setStateReceived(true);
+      if (lightningState.flows.train_flow.vars.flow_running) {
+          setStartInstallState(true);
+          setFlowRunning(true);
+          setChecksFailed(false);
+      }
       let checks = lightningState.flows.train_flow.works.work_0?.vars;
       if (checks) {
         setCheck(checks.cuda, setCompleteCUDA)
@@ -482,8 +486,8 @@ export default function Train(props) {
         setEnableTrainState(true);
         setFlowRunning(true);
       }
-      if (lightningState.flows.train_flow.works.work_0?.vars.share_invite_link) {
-        var shareInviteLink = lightningState.flows.train_flow.works.work_0.vars.share_invite_link;
+      if (lightningState.flows.train_flow.vars.share_link) {
+        var shareInviteLink = lightningState.flows.train_flow.vars.share_link;
         setShareInviteLink(shareInviteLink);
       }
     }
@@ -505,7 +509,7 @@ export default function Train(props) {
           Lightning Collaborative
         </Typography>
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
-          Train collaboratively, using Lightning Flash to train a translation model.
+          Train collaboratively, using Lightning Transformers to train a language model.
         </Typography>
         {startTraining && stateReceived ? StopTrain({ lightningState, updateLightningState, shareInviteLink, setShareInviteLink, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState }) : null}
         {!startTraining && stateReceived ? Config({ flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize }) : null}

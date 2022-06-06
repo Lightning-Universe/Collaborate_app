@@ -1,26 +1,46 @@
-import json
+import asyncio
+import multiprocessing
 import os
-import subprocess
 import sys
+from functools import partial
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
+import pytorch_lightning as pl
 import requests
-from lightning.components.python import PopenPythonScript
+import torch
+from hivemind import (
+    Float16Compression,
+    NoCompression,
+    SizeAdaptiveCompression,
+    Uniform8BitQuantization,
+)
+from hivemind.optim.grad_averager import GradientAverager
+from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
+from lightning.components.python import TracerPythonScript
+from lightning.utilities.tracer import Tracer
+from pytorch_lightning.strategies import CollaborativeStrategy
 
-# todo: unsure if we can use the Tracer, as we need to capture the stdout
-# todo: also tracing feels a bit hacky...
+from lightning_collaborative.components.callbacks import (
+    CollaborativeProgressBar,
+    CollaborativeProgressTracker,
+    PLAppArtifactsTracker,
+    TrainMetrics,
+)
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 
 
-class CollaborativeLightningWork(PopenPythonScript):
-    def __init__(self, script_path: Union[str, Path], debug: bool, **kwargs):
+class CollaborativeLightningRunner(TracerPythonScript):
+    def __init__(
+        self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs
+    ):
         super().__init__(script_path, **kwargs)
-        self.logs = ""
+        self._running_on_cloud = None
         self._device = None
-        self.debug = debug
-        self._peer_host = None
-        self._peer_port = None
+        self.logs = ""
+        self.skip_environment_check = skip_environment_check
+        self.peer_host = None
+        self.peer_port = None
         self._server = None
         self.linux = None
         self.cuda = None
@@ -34,109 +54,155 @@ class CollaborativeLightningWork(PopenPythonScript):
         self.success = None
         self.training_started = False
         self.share_invite_link = None
+        self.batch_size = None
+        self.optimize_communication = None
+        self.optimize_memory = None
+        self.power_sgd = None
+        self.is_server = None
+        self.progress_state = None
+        self.log_dir = None
+        self.loss = None
+        self.contribution = None
+        self.peers = None
+        self.host_maddrs = None
 
     def run(
         self,
         server: bool,
-        invite_link: Optional[str],
-        device: int,
+        peers: Optional[List[str]],
         power_sgd: bool,
         optimize_communication: bool,
         optimize_memory: bool,
         batch_size: int,
+        device: int,
+        root_flow_cuda_available: bool,
     ) -> None:
-        print("Starting environment check")
-        setup = EnvironmentChecker(debug=self.debug)
-        self.linux = setup.check_linux()
+        # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
+        self._running_on_cloud = (
+            not root_flow_cuda_available and torch.cuda.is_available()
+        )
+        self._device = 0 if self._running_on_cloud else device
 
-        # skip requirements install if in debug mode
-        if self.debug:
+        self.run_environment_check()
+        if self.success:
+            self.training_started = True
+            self.batch_size = batch_size
+            self.optimize_communication = optimize_communication
+            self.optimize_memory = optimize_memory
+            self.power_sgd = power_sgd
+            self.is_server = server
+            if self.is_server:
+                # use the first work that was spun up host as we assume that's the main node.
+                self.host_maddrs = [
+                    f"/ip4/0.0.0.0/tcp/{self.port}",
+                    f"/ip4/0.0.0.0/udp/{self.port}/quic",
+                ]
+            self.peers = peers
+            return super().run()
+
+    def configure_tracer(self) -> Tracer:
+        def trainer_pre_fn(trainer, *args, **kwargs):
+            # compresses values above threshold with 8bit Quantization, lower with Float16
+            compression = SizeAdaptiveCompression(
+                threshold=2**16 + 1,
+                less=Float16Compression(),
+                greater_equal=Uniform8BitQuantization(),
+            )
+            kwargs["precision"] = 16 if self.optimize_memory else 32
+
+            kwargs["strategy"] = CollaborativeStrategy(
+                target_batch_size=self.batch_size,
+                delay_state_averaging=self.optimize_communication,
+                delay_optimizer_step=self.optimize_communication,
+                offload_optimizer=self.optimize_communication,
+                reuse_grad_buffers=self.optimize_memory,
+                averaging_timeout=300,
+                allreduce_timeout=300,
+                # Use PowerSGD to reduce communication overhead
+                grad_averager_factory=partial(
+                    PowerSGDGradientAverager,
+                    averager_rank=32,
+                    min_compression_ratio=0.5,
+                )
+                if self.power_sgd
+                else GradientAverager,
+                grad_compression=compression
+                if self.optimize_memory
+                else NoCompression(),
+                state_averaging_compression=compression
+                if self.optimize_memory
+                else NoCompression(),
+                verbose=True,
+                initial_peers=self.peers,
+                host_maddrs=self.host_maddrs,
+            )
+            kwargs["accelerator"] = "auto"
+            kwargs["devices"] = 1
+            kwargs["callbacks"] = kwargs.get("callbacks", []) + [
+                CollaborativeProgressTracker(self),
+                CollaborativeProgressBar(self),
+                PLAppArtifactsTracker(self),
+                TrainMetrics(self),
+            ]
+
+            if self.cuda and not self._running_on_cloud:
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(self._device)
+            return {}, args, kwargs
+
+        tracer = super().configure_tracer()
+        tracer.add_traced(pl.Trainer, "__init__", pre_fn=trainer_pre_fn)
+        return tracer
+
+    def run_environment_check(self):
+        print("Starting environment check")
+        setup = EnvironmentChecker(skip_environment_check=self.skip_environment_check)
+        if self._running_on_cloud:
+            print("Running on cloud, skipping environment check")
+            self.success = True
+            self.cuda = True
+            self.memory = True
+            self.linux = True
             self.python = True
-        else:
-            self.python = setup.setup_python_environment()
+            self.internet = True
+            # todo: hard coded here
+            self.bandwidth = f"{1024:.1f}" + "MBit/s"
+            self.current_memory = (
+                "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
+            )
+            print("Finished environment check")
+            return
+        self.linux = setup.check_os()
+        # todo: we should remove this check
+        self.python = True
         self.discovered_devices = setup.check_cuda_devices_available()
         self.cuda = self.discovered_devices > 0
         self.internet = setup.sufficient_internet()
         self.memory = setup.sufficient_memory()
-        self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.current_memory = (
             "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
         )
+        self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         print("Finished environment check")
-        if self.success:
-            self.training_started = True
-            print("Starting training")
-            if optimize_communication:
-                self.script_args += ["--optimize_communication"]
-            if optimize_memory:
-                self.script_args += ["--optimize_memory"]
-            if power_sgd:
-                self.script_args += ["--power_sgd"]
-            self.script_args += [f"--batch_size={batch_size}"]
-            self._device = device
-            self._server = server
 
-            host, port = self.public_host, self.port
-            if invite_link:
-                pieces = invite_link.split("?")
-                [host, port] = [pieces[1], pieces[2]]
-                host = host.replace("host=", "")
-                port = int(port.replace("port=", ""))
-            self.share_invite_link = self._generate_link(
-                host=host,
-                port=port,
-                power_sgd=power_sgd,
-                optimize_memory=optimize_memory,
-                optimize_communication=optimize_communication,
-                batch_size=batch_size,
-            )
-            self._peer_host, self._peer_port = host, port
-            return super().run()
-
-    @property
-    def public_host(self):
+    def retrieve_public_host(self):
         request = requests.get("https://api.ipify.org")
         request.raise_for_status()
         address = request.text
         return address
 
-    def _run_with_subprocess_popen(self) -> None:
-        script_path = self.script_path if not self.debug else "dummy_train.py"
-        cmd = [sys.executable] + [script_path] + self.script_args
-        env = self.env if self.env is not None else os.environ.copy()
-        if self._server:
-            env["PL_ENDPOINT"] = str(1)
-            env["PL_HOST"] = str(self.host)
-            env["PL_PORT"] = str(self.port)
-        else:
-            env["PL_PEER_ENDPOINT"] = str(f"{self._peer_host}:{self._peer_port}")
-        env["CUDA_VISIBLE_DEVICES"] = str(self._device)
-        with subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=1,
-            close_fds=True,
-            env=env,
-        ) as proc:
-            self.pid = proc.pid
-            if proc.stdout:
-                with proc.stdout:
-                    for line in iter(proc.stdout.readline, b""):
-                        self.logs += "\n" + line.decode().rstrip()
-            self.exit_code = proc.wait()
-            if self.exit_code != 0:
-                print(f"process exited with {self.exit_code}")
+    def _run_tracer(self, init_globals):
+        if self.cuda:
+            return super()._run_tracer(init_globals)
 
-    def _generate_link(
-        self, host, port, power_sgd, optimize_memory, optimize_communication, batch_size
-    ):
-        config = dict(
-            powerSGD=power_sgd,
-            optimizeMemory=optimize_memory,
-            optimizeCommunication=optimize_communication,
-            batchSize=batch_size,
-        )
-        return f"collaborative?host={host}?port={port}?config={json.dumps(config)}"
+        def run_trace():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            sys.argv = [self.script_path]
+            tracer = self.configure_tracer()
+            return tracer.trace(
+                self.script_path, *self.script_args, init_globals=init_globals
+            )
+
+        process = multiprocessing.Process(target=run_trace)
+        process.start()

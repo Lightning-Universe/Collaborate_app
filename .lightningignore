@@ -2,3 +2,4 @@
 .storage/
 node_modules/
 lightning_logs/
+data/

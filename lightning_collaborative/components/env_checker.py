@@ -1,4 +1,5 @@
 import importlib
+import multiprocessing
 import platform
 import subprocess
 from typing import List
@@ -7,20 +8,38 @@ from xml.etree import ElementTree
 import torch
 
 
+def _check_cuda_devices_available():
+    # todo: we assume the user has torch installed, this could not be the case
+    # maybe be a torch check instead of CUDA check
+    import torch
+
+    if not torch.cuda.is_available():
+        return 0
+
+    return torch.cuda.device_count()
+
+
+def _local_devices():
+    if torch.cuda.is_available():
+        return torch.cuda.device_count()
+    return 0  # todo this should be set to None?
+
+
 class EnvironmentChecker:
     def __init__(
         self,
-        debug: bool = False,
+        skip_environment_check: bool = False,
         minimum_bandwidth_gb: int = 0,
         min_cuda_memory_gb: int = 8,
     ):
-        self.debug = debug
+        self.skip_environment_check = skip_environment_check
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
         self.min_cuda_memory_gb = min_cuda_memory_gb
         self._bandwidth_cache = None
+        self.boomer = False
 
-    def check_linux(self):
-        return platform.system() == "Linux"
+    def check_os(self):
+        return platform.system() == "Linux" or platform.system() == "Darwin"
 
     def _check_package_installed(self, package):
         try:
@@ -30,18 +49,12 @@ class EnvironmentChecker:
         return True
 
     def check_cuda_devices_available(self):
-        # todo: we assume the user has torch installed, this could not be the case
-        # maybe be a torch check instead of CUDA check
-        if self.debug:
+        if self.skip_environment_check:
             return 8
         if not self._check_package_installed("torch"):
             return 0
-        import torch
-
-        if not torch.cuda.is_available():
-            return 0
-
-        return torch.cuda.device_count()
+        with multiprocessing.Pool(1) as pool:
+            return pool.apply(_check_cuda_devices_available)
 
     def sufficient_internet(self):
         return True
@@ -52,15 +65,11 @@ class EnvironmentChecker:
         except:  # noqa: E722
             return False
 
-    def setup_python_environment(self):
-        # todo: we can get rid of this probably
-        return True
-
     def sufficient_memory(self):
         return not any(gpu <= self.min_cuda_memory_gb for gpu in self.cuda_memory())
 
     def bandwidth(self):
-        if self.debug:
+        if self.skip_environment_check:
             return 1
         if self._bandwidth_cache is not None:
             return self._bandwidth_cache
@@ -139,12 +148,11 @@ class EnvironmentChecker:
         return warning
 
     def successful(self):
-        if self.debug:
+        if self.skip_environment_check:
             return True
-        return self.setup_python_environment() and self.check_linux()
+        return self.check_os()
 
     @classmethod
     def local_devices(cls):
-        if torch.cuda.is_available():
-            return torch.cuda.device_count()
-        return 1  # todo this should be set to None?
+        with multiprocessing.Pool(1) as pool:
+            return pool.apply(_local_devices)

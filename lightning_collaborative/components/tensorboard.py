@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+from typing import Dict, List
 
 from lightning import BuildConfig, LightningFlow, LightningWork
 from lightning.storage import Path
@@ -21,6 +22,9 @@ class TensorBoard(LightningFlow):
 
     def run(self) -> None:
         self.worker.run()
+
+    def configure_layout(self) -> List[Dict[str, str]]:
+        return [{"name": "Monitor", "content": self.worker.url}]
 
 
 class TensorBoardWorker(LightningWork):
