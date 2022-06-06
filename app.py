@@ -5,6 +5,7 @@ from typing import Optional
 from lightning import CloudCompute, LightningApp, LightningFlow
 from lightning.frontend import StaticWebFrontend
 from lightning.storage import Path
+from lightning.utilities.enum import WorkStageStatus
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.script import CollaborativeLightningRunner
@@ -25,6 +26,7 @@ class TrainFlow(LightningFlow):
         self.optimize_communication = None
         self.batch_size = None
         self.start_setup = False
+        self.flow_running = False
         self.discovered_devices = EnvironmentChecker.local_devices()
         self.local_devices_available = self.discovered_devices > 0
         self.logs = None
@@ -72,6 +74,10 @@ class TrainFlow(LightningFlow):
                 self.start_multi_process = False
         if not self.share_link:
             self._set_share_link()
+        self.flow_running = (
+            hasattr(self, "work_0")
+            and self.work_0.status.stage == WorkStageStatus.RUNNING
+        )
 
     def _run_terminal_mode(self):
         terminal = CollaborativeTerminal()
@@ -102,7 +108,7 @@ class TrainFlow(LightningFlow):
                     run_once=False,
                     parallel=True,
                     skip_environment_check=self.skip_environment_check,
-                    cloud_compute=CloudCompute(name="gpu"),
+                    cloud_compute=CloudCompute(name="gpu", shm_size=4096),
                 ),
             )
         getattr(self, f"work_{device}").run(

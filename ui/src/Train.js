@@ -449,6 +449,11 @@ export default function Train(props) {
   React.useEffect(() => {
     if (lightningState) {
       setStateReceived(true);
+      if (lightningState.flows.train_flow.vars.flow_running) {
+          setStartInstallState(true);
+          setFlowRunning(true);
+          setChecksFailed(false);
+      }
       let checks = lightningState.flows.train_flow.works.work_0?.vars;
       if (checks) {
         setCheck(checks.cuda, setCompleteCUDA)

@@ -33,7 +33,7 @@ function Main() {
         {/* Hero unit */}
         <Container disableGutters maxWidth="xl" component="main" sx={{ pt: 8, pb: 6, display: 'flex' }}>
           {Train({ logState, setLogState, lightningState, updateLightningState })}
-          {Metrics({ logState, setLogState, lightningState, updateLightningState})}
+          {Metrics({ logState, setLogState, lightningState, updateLightningState })}
         </Container>
         {/* End hero unit */}
         <Container maxWidth="xl"

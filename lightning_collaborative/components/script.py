@@ -1,5 +1,6 @@
 import asyncio
 import multiprocessing
+import os
 import sys
 from functools import partial
 from pathlib import Path
@@ -136,13 +137,16 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 host_maddrs=self.host_maddrs,
             )
             kwargs["accelerator"] = "auto"
-            kwargs["devices"] = [self._device] if torch.cuda.is_available() else 1
+            kwargs["devices"] = 1
             kwargs["callbacks"] = kwargs.get("callbacks", []) + [
                 CollaborativeProgressTracker(self),
                 CollaborativeProgressBar(self),
                 PLAppArtifactsTracker(self),
                 TrainMetrics(self),
             ]
+
+            if self.cuda and not self._running_on_cloud:
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(self._device)
             return {}, args, kwargs
 
         tracer = super().configure_tracer()

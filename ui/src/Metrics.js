@@ -55,42 +55,42 @@ function Progress(props) {
           <Grid item xs={8}>
             <Card sx={{ p: 2, display: 'flex', mb: 1, mt: 2, flexDirection: 'column', background: "transparent", borderRadius: 2, border: 1, borderColor: "#ffffff44", boxShadow: '0' }}>
               <Title><Typography variant="h6" sx={{ color: 'white', letterSpacing: 3 }}>STATISTICS</Typography></Title>
-              <Container disableGutters id="left" sx={{ display: 'flex', flexDirection: 'row',  }}>
-                  <Container disableGutters sx={{pl : 0, pr: 2}}>
-                    <Title>
-                      <LightTooltip title="Time remaining till next global iteration." followCursor>
-                        <Typography variant="caption" sx={{ color: 'white' }}>GLOBAL EPOCH ETA</Typography>
-                      </LightTooltip>
-                    </Title>
-                    <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.eta}</Typography></Title>
-                  </Container>
-                  <Container disableGutters sx={{pl : 0, pr: 0}}>
-                    <Title>
-                      <LightTooltip title="Number of machines currently training collaboratively." followCursor>
-                        <Typography variant="caption" sx={{ color: 'white' }}>NUMBER OF PEERS</Typography>
-                      </LightTooltip>
-                    </Title>
-                    <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.peers}</Typography></Title>
-                  </Container>
-                  <Container disableGutters sx={{pl : 0, pr: 0}}>
-                    <Title>
-                      <LightTooltip title="Running mean of the contribution your local machine has made to each global iteration." followCursor>
-                        <Typography variant="caption" sx={{ color: 'white' }}>CONTRIBUTION</Typography>
-                      </LightTooltip>
-                    </Title>
-                    <Title><Typography variant="h5" sx={{ color: 'white' }}>{`${props.contribution}%`}</Typography></Title>
-                  </Container>
+              <Container disableGutters id="left" sx={{ display: 'flex', flexDirection: 'row', }}>
+                <Container disableGutters sx={{ pl: 0, pr: 2 }}>
+                  <Title>
+                    <LightTooltip title="Time remaining till next global iteration." followCursor>
+                      <Typography variant="caption" sx={{ color: 'white' }}>GLOBAL EPOCH ETA</Typography>
+                    </LightTooltip>
+                  </Title>
+                  <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.eta}</Typography></Title>
+                </Container>
+                <Container disableGutters sx={{ pl: 0, pr: 0 }}>
+                  <Title>
+                    <LightTooltip title="Number of machines currently training collaboratively." followCursor>
+                      <Typography variant="caption" sx={{ color: 'white' }}>NUMBER OF PEERS</Typography>
+                    </LightTooltip>
+                  </Title>
+                  <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.peers}</Typography></Title>
+                </Container>
+                <Container disableGutters sx={{ pl: 0, pr: 0 }}>
+                  <Title>
+                    <LightTooltip title="Running mean of the contribution your local machine has made to each global iteration." followCursor>
+                      <Typography variant="caption" sx={{ color: 'white' }}>CONTRIBUTION</Typography>
+                    </LightTooltip>
+                  </Title>
+                  <Title><Typography variant="h5" sx={{ color: 'white' }}>{`${props.contribution}%`}</Typography></Title>
+                </Container>
               </Container>
             </Card>
           </Grid>
           <Grid item xs={4}>
             <Card sx={{ p: 2, display: 'flex', mb: 1, mt: 2, flexDirection: 'column', background: "transparent", borderRadius: 2, border: 1, borderColor: "#ffffff44", boxShadow: '0' }}>
               <Title><Typography variant="h6" sx={{ color: 'white', letterSpacing: 3 }}>METRICS</Typography></Title>
-              <Container disableGutters id="left" sx={{ display: 'flex', flexDirection: 'row',  }}>
-                  <Container disableGutters sx={{pl : 0, pr: 2}}>
-                    <Title><Typography variant="caption" sx={{ color: 'white' }}>TRAINING LOSS</Typography></Title>
-                    <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.loss}</Typography></Title>
-                  </Container>
+              <Container disableGutters id="left" sx={{ display: 'flex', flexDirection: 'row', }}>
+                <Container disableGutters sx={{ pl: 0, pr: 2 }}>
+                  <Title><Typography variant="caption" sx={{ color: 'white' }}>TRAINING LOSS</Typography></Title>
+                  <Title><Typography variant="h5" sx={{ color: 'white' }}>{props.loss}</Typography></Title>
+                </Container>
               </Container>
             </Card>
           </Grid>
@@ -139,7 +139,7 @@ export default function Metrics(props) {
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           &#8203;
         </Typography>
-        {Progress({eta, progress, epoch, peers, contribution, loss})}
+        {Progress({ eta, progress, epoch, peers, contribution, loss })}
         <Card sx={{ borderRadius: 2, height: "100%" }}>
           <CardContent sx={{ p: 0, height: "100%", '&:last-child': { pb: 0 }, backgroundColor: '#282a36' }}>
             <Box sx={{ height: "300px", overflowY: "auto", width: '100%', pb: 0, backgroundColor: '#282a36' }}>

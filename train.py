@@ -1,5 +1,3 @@
-import time
-
 import pytorch_lightning as pl
 from lightning_transformers.task.nlp.language_modeling import (
     LanguageModelingDataConfig,
@@ -10,15 +8,8 @@ from transformers import AutoTokenizer
 
 if __name__ == "__main__":
 
-    class MyTransformer(LanguageModelingTransformer):
-        def training_step(self, batch, batch_idx):
-            time.sleep(0.5)
-            return super().training_step(batch, batch_idx)
-
-    tokenizer = AutoTokenizer.from_pretrained(
-        pretrained_model_name_or_path="sshleifer/tiny-gpt2"
-    )
-    model = MyTransformer(pretrained_model_name_or_path="sshleifer/tiny-gpt2")
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path="gpt2")
+    model = LanguageModelingTransformer(pretrained_model_name_or_path="gpt2")
     dm = LanguageModelingDataModule(
         cfg=LanguageModelingDataConfig(
             batch_size=2,

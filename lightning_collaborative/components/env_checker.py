@@ -36,6 +36,7 @@ class EnvironmentChecker:
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
         self.min_cuda_memory_gb = min_cuda_memory_gb
         self._bandwidth_cache = None
+        self.boomer = False
 
     def check_os(self):
         return platform.system() == "Linux" or platform.system() == "Darwin"
