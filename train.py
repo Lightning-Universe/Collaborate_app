@@ -1,14 +1,12 @@
 import math
 import os
 import warnings
-from functools import partial
 from typing import List
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from datasets import load_dataset
-from pytorch_lightning.strategies import CollaborativeStrategy
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, IterableDataset
@@ -410,38 +408,9 @@ class CharDataModule(pl.LightningDataModule):
         return self.tokenizer.vocab_size
 
 
-class DummyLearningRateScheduler(torch.optim.lr_scheduler.LambdaLR):
-    """This is a dummy example that demonstrates how hivemind.Optimizer can use PyTorch LR Schedulers.
-
-    This scheduler is based not on local iterations, but on the number of global updates performed by all peers. As an
-    alternative, one can run a custom scheduler via Lightning callback based on LightningOptimizer.local_epoch.
-    """
-
-    def __init__(self, optimizer, num_warmup_steps, num_training_steps):
-        self.num_warmup_steps, self.num_training_steps = (
-            num_warmup_steps,
-            num_training_steps,
-        )
-        self._base_lr = self._prev_lr = optimizer.param_groups[0]["lr"]
-        super().__init__(optimizer, self._linear_decay_with_warmup)
-
-    def _linear_decay_with_warmup(self, current_step: int):
-        if current_step < self.num_warmup_steps:
-            new_learning_rate = float(current_step) / float(
-                max(1, self.num_warmup_steps)
-            )
-        else:
-            new_learning_rate = max(
-                0.0,
-                float(self.num_training_steps - current_step)
-                / float(max(1, self.num_training_steps - self.num_warmup_steps)),
-            )
-        return new_learning_rate
-
-
 if __name__ == "__main__":
-    batch_size = 4096
-    num_workers = 8
+    batch_size = 2
+    num_workers = 0
     block_size = 128
     n_layer = 8
     n_head = 16
@@ -458,23 +427,7 @@ if __name__ == "__main__":
         learning_rate=learning_rate,
     )
 
-    num_steps = 10000
-    trainer = pl.Trainer(
-        devices=1,
-        accelerator="auto",
-        log_every_n_steps=1,
-        max_steps=num_steps,
-        precision=32,
-        strategy=CollaborativeStrategy(
-            target_batch_size=batch_size,
-            scheduler_fn=partial(
-                DummyLearningRateScheduler,
-                num_warmup_steps=num_steps * 0.25,
-                num_training_steps=num_steps,
-            ),
-            verbose=True,
-        ),
-        enable_checkpointing=False,
-    )
+    # the app will inject the collaborative strategy for us!
+    trainer = pl.Trainer()
 
     trainer.fit(model, datamodule=dm)

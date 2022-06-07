@@ -28,6 +28,7 @@ from lightning_collaborative.components.callbacks import (
     TrainMetrics,
 )
 from lightning_collaborative.components.env_checker import EnvironmentChecker
+from lightning_collaborative.components.scheduler import WarmupLearningRateScheduler
 
 
 class CollaborativeLightningRunner(TracerPythonScript):
@@ -108,13 +109,18 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            kwargs["precision"] = 16 if self.optimize_memory else 32
+            # required for Mac support.
+            kwargs["precision"] = 32
+
+            # todo shouldn't be hard-coded
+            max_steps = 10000
 
             kwargs["strategy"] = CollaborativeStrategy(
                 target_batch_size=self.batch_size,
                 delay_state_averaging=self.optimize_communication,
-                delay_optimizer_step=self.optimize_communication,
-                offload_optimizer=self.optimize_communication,
+                # not supported for mac OS.
+                delay_optimizer_step=False,
+                offload_optimizer=False,
                 reuse_grad_buffers=self.optimize_memory,
                 averaging_timeout=300,
                 allreduce_timeout=300,
@@ -135,7 +141,15 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 verbose=True,
                 initial_peers=self.peers,
                 host_maddrs=self.host_maddrs,
+                # todo: not a great idea to inject the scheduler here
+                # but we have to for now.
+                scheduler_fn=partial(
+                    WarmupLearningRateScheduler,
+                    num_warmup_steps=max_steps * 0.25,
+                    num_training_steps=max_steps,
+                ),
             )
+            kwargs["max_steps"] = max_steps
             kwargs["accelerator"] = "auto"
             kwargs["devices"] = 1
             kwargs["callbacks"] = kwargs.get("callbacks", []) + [
