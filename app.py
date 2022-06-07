@@ -172,4 +172,5 @@ class RootFlow(LightningFlow):
         return tabs
 
 
-app = LightningApp(root=RootFlow())
+if __name__ == "__main__":
+    app = LightningApp(root=RootFlow())
