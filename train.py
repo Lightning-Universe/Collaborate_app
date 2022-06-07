@@ -38,8 +38,8 @@ def lamb_step(
         exp_avg_sq = exp_avg_sqs[i]
         step = state_steps[i]
 
-        bias_correction1 = 1 - beta1**step
-        bias_correction2 = 1 - beta2**step
+        bias_correction1 = 1 - beta1 ** step
+        bias_correction2 = 1 - beta2 ** step
 
         # Decay the first and second moment running average coefficient
         exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
@@ -357,7 +357,8 @@ class CharDataset(IterableDataset):
             # Split by chunks of max_len.
             result = {
                 k: [
-                    t[i : i + seq_length] for i in range(0, total_length, seq_length)
+                    t[i : i + seq_length]  # noqa: E203
+                    for i in range(0, total_length, seq_length)
                 ]
                 for k, t in concatenated_examples.items()
             }
