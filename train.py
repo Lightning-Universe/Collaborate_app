@@ -356,7 +356,7 @@ class CharDataset(IterableDataset):
             total_length = (total_length // seq_length) * seq_length
             # Split by chunks of max_len.
             result = {
-                k: [t[i: i + seq_length] for i in range(0, total_length, seq_length)]
+                k: [t[i : i + seq_length] for i in range(0, total_length, seq_length)]
                 for k, t in concatenated_examples.items()
             }
             return result
