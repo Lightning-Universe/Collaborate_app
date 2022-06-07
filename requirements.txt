@@ -2,4 +2,5 @@ speedtest-cli
 tensorboard==2.9.0
 https://github.com/SeanNaren/hivemind/archive/refs/heads/macos.zip
 https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/feat/collaborative.zip
-lightning-transformers==0.2.0rc1
+transformers
+datasets
