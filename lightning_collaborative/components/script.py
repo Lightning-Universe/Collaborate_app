@@ -115,7 +115,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
             max_steps = 10000
             kwargs["strategy"] = CollaborativeStrategy(
                 target_batch_size=self.batch_size,
-                delay_state_averaging=self.optimize_communication,
+                delay_state_averaging=False,
                 # not supported for mac OS.
                 delay_optimizer_step=False,
                 offload_optimizer=False,

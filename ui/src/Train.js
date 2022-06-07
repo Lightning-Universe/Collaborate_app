@@ -377,10 +377,7 @@ function StopTrain(props) {
           </Grid>
         </Grid>
         <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1 }}>
-          You can see your local stored metrics in the LOCAL MONITOR tab.
-        </Typography>
-        <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1 }}>
-          If joining the Lightning Collaborative Run, You can see the global metrics on W&B in the GLOBAL MONITOR tab.
+          You can see your local stored metrics in the MONITOR tab.
         </Typography>
         <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1 }}>
           To stop training, stop the app.
