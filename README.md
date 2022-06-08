@@ -63,6 +63,3 @@ This usually is because the internet bandwidth isn't strong enough to download u
 
 - The internet check isn't real all the time. Sometimes it disconnects for no reason.
 - A very small model is training. This is primarily due to RAM restrictions.
-
-
-
