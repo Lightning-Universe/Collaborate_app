@@ -139,6 +139,9 @@ export default function Metrics(props) {
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           &#8203;
         </Typography>
+        <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
+          &#8203;
+        </Typography>
         {Progress({ eta, progress, epoch, peers, contribution, loss })}
         <Card sx={{ borderRadius: 2, height: "100%" }}>
           <CardContent sx={{ p: 0, height: "100%", '&:last-child': { pb: 0 }, backgroundColor: '#282a36' }}>

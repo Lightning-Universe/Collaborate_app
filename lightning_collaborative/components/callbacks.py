@@ -6,6 +6,7 @@ from typing import Optional
 
 import hivemind
 import pytorch_lightning as pl
+import torch
 from hivemind.optim.progress_tracker import GlobalTrainingProgress
 from lightning.storage import Path
 from pytorch_lightning import Callback
@@ -34,7 +35,9 @@ class CollaborativeProgressTracker(Callback):
         self.work.progress_state = self.progress_state
         if self.work.peers is None:
             self.work.peers = self.peers
-        pl_module.log("num_peers", trainer.strategy.num_peers, on_step=True)
+        pl_module.log(
+            "num_peers", torch.tensor(trainer.strategy.num_peers), on_step=True
+        )
 
     @property
     def peers(self):
@@ -154,7 +157,7 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
             line = (
                 f"Local Epoch: {trainer.current_epoch} "
-                f"Batch: [{self.train_batch_idx}/{self.total_train_batches}] "
+                f"Batch: [{self.train_batch_idx}] "
                 f"Metrics: {metrics}\r"
             )
 
