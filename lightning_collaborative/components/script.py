@@ -111,11 +111,12 @@ class CollaborativeLightningRunner(TracerPythonScript):
             )
             # required for Mac support.
             kwargs["precision"] = 32
-            # todo shouldn't be hard-coded
-            max_steps = 1000000
+            # todo shouldn't be hard-coded, some real YOLO numbers here
+            max_steps = 10000000
+            actual_steps = int(max_steps * 2 // self.batch_size)
             kwargs["strategy"] = CollaborativeStrategy(
                 target_batch_size=self.batch_size,
-                delay_state_averaging=False,
+                delay_state_averaging=True,
                 # not supported for mac OS.
                 delay_optimizer_step=False,
                 offload_optimizer=False,
@@ -143,8 +144,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 # but we have to for now.
                 scheduler_fn=partial(
                     WarmupLearningRateScheduler,
-                    num_warmup_steps=max_steps * 0.25,
-                    num_training_steps=max_steps,
+                    num_warmup_steps=50,
+                    num_training_steps=actual_steps,
                 ),
             )
             kwargs["max_steps"] = max_steps

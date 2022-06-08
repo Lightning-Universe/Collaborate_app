@@ -4,10 +4,14 @@ import warnings
 from functools import partial
 from typing import List
 
+import hivemind
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from datasets import load_dataset
+from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
+from pytorch_lightning import Callback
+from pytorch_lightning.callbacks.progress.base import get_standard_metrics
 from pytorch_lightning.strategies import CollaborativeStrategy
 from torch import Tensor
 from torch.nn import functional as F
@@ -372,9 +376,9 @@ class CharDataset(IterableDataset):
         )
 
     def __iter__(self):
-        dataset = iter(self.dataset)
-        while True:
-            chunk = next(dataset)["input_ids"]
+        self.dataset.shuffle()
+        for chunk in self.dataset:
+            chunk = chunk["input_ids"]
             # src and target are off by one, we want the model to predict the next word
             x = torch.tensor(chunk[:-1], dtype=torch.long)
             y = torch.tensor(chunk[1:], dtype=torch.long)
@@ -412,9 +416,42 @@ class CharDataModule(pl.LightningDataModule):
         return self.tokenizer.vocab_size
 
 
+class TrainMetrics(Callback):
+    def __init__(self) -> None:
+        super().__init__()
+        self._trainer = None
+        self._current_epoch = -1
+        self.accumulated_samples = 0
+        self.epochs_contributed = 0
+
+    def on_fit_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        self._trainer = trainer
+
+    def on_train_batch_end(
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs,
+        batch,
+        batch_idx: int,
+    ) -> None:
+        self.accumulated_samples += self.hivemind_optimizer.batch_size_per_step
+        if self.hivemind_optimizer.local_epoch != self._current_epoch:
+            metrics = get_standard_metrics(trainer, pl_module)
+            print("CURRENT LOSS", metrics["loss"])
+            self._current_epoch = self.hivemind_optimizer.local_epoch
+            self.epochs_contributed += 1
+
+    @property
+    def hivemind_optimizer(self) -> hivemind.Optimizer:
+        return self._trainer.optimizers[0]
+
+
 if __name__ == "__main__":
     batch_size = 2
-    target_batch_size = 4096
+    target_batch_size = 1024
     num_workers = 8
     block_size = 128
     n_layer = 8
@@ -432,7 +469,8 @@ if __name__ == "__main__":
         learning_rate=learning_rate,
     )
 
-    num_steps = 10000
+    num_steps = 1000000
+    actual_steps = int(num_steps * batch_size // target_batch_size)
     trainer = pl.Trainer(
         devices=1,
         accelerator="auto",
@@ -443,11 +481,13 @@ if __name__ == "__main__":
             target_batch_size=target_batch_size,
             scheduler_fn=partial(
                 WarmupLearningRateScheduler,
-                num_warmup_steps=num_steps * 0.25,
-                num_training_steps=num_steps,
+                num_warmup_steps=actual_steps * 0.25,
+                num_training_steps=actual_steps,
             ),
             verbose=True,
+            delay_state_averaging=True
         ),
+        callbacks=TrainMetrics(),
         enable_checkpointing=False,
     )
 

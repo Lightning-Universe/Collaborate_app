@@ -368,9 +368,9 @@ class CharDataset(IterableDataset):
         )
 
     def __iter__(self):
-        dataset = iter(self.dataset)
-        while True:
-            chunk = next(dataset)["input_ids"]
+        self.dataset.shuffle()
+        for chunk in self.dataset:
+            chunk = chunk["input_ids"]
             # src and target are off by one, we want the model to predict the next word
             x = torch.tensor(chunk[:-1], dtype=torch.long)
             y = torch.tensor(chunk[1:], dtype=torch.long)

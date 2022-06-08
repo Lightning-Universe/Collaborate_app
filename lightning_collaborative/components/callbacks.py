@@ -157,7 +157,7 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
             line = (
                 f"Local Epoch: {trainer.current_epoch} "
-                f"Batch: [{self.train_batch_idx}/{self.total_train_batches}] "
+                f"Batch: [{self.train_batch_idx}] "
                 f"Metrics: {metrics}\r"
             )
 
