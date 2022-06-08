@@ -9,7 +9,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from datasets import load_dataset
-from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks.progress.base import get_standard_metrics
 from pytorch_lightning.strategies import CollaborativeStrategy
