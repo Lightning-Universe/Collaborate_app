@@ -156,7 +156,6 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics.pop("v_num")
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
             line = (
-                f"Local Epoch: {trainer.current_epoch} "
                 f"Batch: [{self.train_batch_idx}] "
                 f"Metrics: {metrics}\r"
             )
