@@ -30,7 +30,7 @@ class EnvironmentChecker:
         self,
         skip_environment_check: bool = False,
         minimum_bandwidth_gb: int = 0,
-        min_cuda_memory_gb: int = 8,
+        min_cuda_memory_gb: int = 5,
     ):
         self.skip_environment_check = skip_environment_check
         self.minimum_bandwidth_gb = minimum_bandwidth_gb
