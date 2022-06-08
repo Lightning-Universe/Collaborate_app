@@ -21,6 +21,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CopyBlock, dracula } from "react-code-blocks";
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Link from '@mui/material/Link';
 
 
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -506,8 +507,9 @@ export default function Train(props) {
           Lightning Collaborative
         </Typography>
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
-          Train collaboratively, using Lightning Transformers to train a language model.
+          Train a language model collaboratively, using Hivemind and PyTorch Lightning.
         </Typography>
+        <Link rel="noopener noreferrer" target="_blank" sx={{ ml: 1, letterSpacing: 1 }} href="https://github.com/PyTorchLightning/lightning-collaborative#troubleshooting">Troubleshooting Guide</Link>
         {startTraining && stateReceived ? StopTrain({ lightningState, updateLightningState, shareInviteLink, setShareInviteLink, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState }) : null}
         {!startTraining && stateReceived ? Config({ flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize }) : null}
         {!startTraining && stateReceived ? StartTrain({ setChecksFailed, flowRunning, setFlowRunning, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, logState, setLogState }) : null}

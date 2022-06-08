@@ -43,13 +43,26 @@ You can skip the environment checks via an environment variable:
 SKIP_ENV_CHECK=1 lightning run app app.py
 ```
 
-## Known issues
+## Troubleshooting
+
+The app is far from perfect and there are some kinks to iron out. Below are helpful tips when using the app.
+
+#### The UI isn't working
+
+Please make sure you're using Google Chrome. Currently Firefox isn't supported.
+
+#### The UI keeps freezing and logs remain static
+
+Typically a refresh of the browser resolves this issue
+
+#### Why does my training keep loading peers?
+
+This usually is because the internet bandwidth isn't strong enough to download updates in time. We're investigating solutions to reduce the bandwidth requirements.
+
+### Other Known issues
 
 - The internet check isn't real all the time. Sometimes it disconnects for no reason.
-- A very small model is training. This is parimily due to RAM restrictions.
+- A very small model is training. This is primarily due to RAM restrictions.
 
-## Hopeful goals
 
-- Can we add Mac support? the blocker is hivemind; more work will need to be done to see how viable it is to make hivemind mac supported
-- Make the checks actually work; what is a sufficient internet connection?
-- Dropdown box to show the code that's actually being run.
+
