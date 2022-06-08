@@ -485,7 +485,7 @@ if __name__ == "__main__":
                 num_training_steps=actual_steps,
             ),
             verbose=True,
-            delay_state_averaging=True
+            delay_state_averaging=True,
         ),
         callbacks=TrainMetrics(),
         enable_checkpointing=False,
