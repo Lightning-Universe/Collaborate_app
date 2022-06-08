@@ -147,6 +147,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     num_warmup_steps=50,
                     num_training_steps=actual_steps,
                 ),
+                persistent=False
             )
             kwargs["max_steps"] = max_steps
             kwargs["accelerator"] = "auto"
