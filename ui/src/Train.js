@@ -107,12 +107,12 @@ function DiscreteBatchSizeSlider(props) {
       <Slider
         size="small"
         aria-label="Batch Size"
-        defaultValue={8192}
+        defaultValue={16384}
         valueLabelDisplay="auto"
         step={512}
-        marks={[{ label: '4096', value: 4096 }, { label: '8192', value: 8192 }, { label: '16384', value: 16384 }]}
+        marks={[{ label: '4096', value: 4096 }, { label: '16384', value: 16384 }, { label: '32768', value: 32768 }]}
         min={0}
-        max={16384}
+        max={32768}
         onChange={handleChange}
         sx={{ color: "#FFFFFF" }}
         disabled={props.presetConfig || props.flowRunning}
