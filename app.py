@@ -1,8 +1,10 @@
 import platform
 
+# todo: huge hack for now when debugging on MacOS
 if platform.system() == "Darwin":
     import multiprocessing
-    multiprocessing.set_start_method('fork')
+
+    multiprocessing.set_start_method("fork")
 import json
 import os
 from typing import Optional
