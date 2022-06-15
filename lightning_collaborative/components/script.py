@@ -122,12 +122,12 @@ class CollaborativeLightningRunner(TracerPythonScript):
             actual_steps = int(max_steps * 2 // self.batch_size)
             print(f"Client mode: {self.client_mode}")
             kwargs["strategy"] = CollaborativeStrategy(
-                averager_opts=dict(bandwidth=100.0),
+                averager_opts=dict(bandwidth=500.0),
                 client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
-                delay_state_averaging=True,
-                delay_optimizer_step=False,
-                offload_optimizer=False,
+                delay_state_averaging=self.optimize_communication,
+                delay_optimizer_step=self.optimize_communication,
+                offload_optimizer=self.optimize_communication,
                 reuse_grad_buffers=self.optimize_memory,
                 averaging_timeout=120,
                 allreduce_timeout=120,
