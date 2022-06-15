@@ -116,7 +116,7 @@ class TrainFlow(LightningFlow):
                     cache_calls=False,
                     parallel=True,
                     skip_environment_check=self.skip_environment_check,
-                    cloud_compute=CloudCompute(name="gpu-fast", shm_size=4096),
+                    cloud_compute=CloudCompute(name="gpu", shm_size=4096),
                 ),
             )
         getattr(self, f"work_{device}").run(
