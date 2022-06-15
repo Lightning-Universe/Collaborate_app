@@ -8,7 +8,12 @@ from lightning.app.storage import Path
 
 
 class TensorBoard(LightningFlow):
-    def __init__(self, log_dir: Path, sync_every_n_seconds: int = 5) -> None:
+    def __init__(
+        self,
+        log_dir: Path,
+        sync_every_n_seconds: int = 5,
+        running_on_cloud: bool = False,
+    ) -> None:
         """This TensorBoard component synchronizes the log directory of an experiment and starts up the server.
 
         Args:
@@ -17,7 +22,9 @@ class TensorBoard(LightningFlow):
         """
         super().__init__()
         self.worker = TensorBoardWorker(
-            log_dir=log_dir, sync_every_n_seconds=sync_every_n_seconds
+            log_dir=log_dir,
+            sync_every_n_seconds=sync_every_n_seconds,
+            running_on_cloud=running_on_cloud,
         )
 
     def run(self) -> None:
@@ -28,12 +35,18 @@ class TensorBoard(LightningFlow):
 
 
 class TensorBoardWorker(LightningWork):
-    def __init__(self, log_dir: Path, sync_every_n_seconds: int = 5) -> None:
+    def __init__(
+        self,
+        log_dir: Path,
+        sync_every_n_seconds: int = 5,
+        running_on_cloud: bool = False,
+    ) -> None:
         super().__init__(
             cloud_build_config=BuildConfig(requirements=["tensorboard"]), parallel=True
         )
         self.log_dir = log_dir
         self._sync_every_n_seconds = sync_every_n_seconds
+        self.running_on_cloud = running_on_cloud
 
     def run(self) -> None:
         if not self.log_dir.exists_local():
@@ -53,5 +66,5 @@ class TensorBoardWorker(LightningWork):
         # Download the log directory periodically
         while True:
             time.sleep(self._sync_every_n_seconds)
-            if self.log_dir.exists_remote():
+            if self.running_on_cloud:
                 self.log_dir.get(overwrite=True)

@@ -164,7 +164,10 @@ class RootFlow(LightningFlow):
         if self.train_flow.logs:
             # training has started, let's start the tensorboard logger
             if not getattr(self, "logger_component", None):
-                logger_component = TensorBoard(log_dir=self.train_flow.work_0.log_dir)
+                logger_component = TensorBoard(
+                    log_dir=self.train_flow.work_0.log_dir,
+                    running_on_cloud=self.train_flow.work_0.running_on_cloud,
+                )
                 if logger_component is not None:
                     setattr(self, "logger_component", logger_component)
             else:
