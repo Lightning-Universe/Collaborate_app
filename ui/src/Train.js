@@ -298,7 +298,7 @@ function Config(props) {
           sx={{ mb: 2 }}
         />
         {props.presetConfig && <Typography variant="body2" align="left" color="text.secondary" component="p" sx={{ letterSpacing: 1, mb: 2 }}>
-          Joining a Lightning Collaborative run, we'll select the configuration for you.
+          Joining a Collaborative Training run, we'll select the configuration for you.
         </Typography>
         }
         <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
@@ -504,7 +504,7 @@ export default function Train(props) {
     <React.Fragment>
       <Container disableGutters sx={{ display: 'flex', flexDirection: 'column', width: '50%' }}>
         <Typography variant="h2" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 3 }}>
-          Lightning Collaborative
+          Collaborative Training
         </Typography>
         <Typography variant="body1" align="left" color="text.secondary" component="p" sx={{ ml: 1, letterSpacing: 1 }}>
           Train a language model collaboratively, using Hivemind and PyTorch Lightning.
