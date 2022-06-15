@@ -10,9 +10,9 @@ import os
 from typing import Optional
 
 from lightning import CloudCompute, LightningApp, LightningFlow
-from lightning.frontend import StaticWebFrontend
-from lightning.storage import Path
-from lightning.utilities.enum import WorkStageStatus
+from lightning.app.frontend import StaticWebFrontend
+from lightning.app.storage import Path
+from lightning.app.utilities.enum import WorkStageStatus
 
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.script import CollaborativeLightningRunner

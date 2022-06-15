@@ -8,7 +8,7 @@ import hivemind
 import pytorch_lightning as pl
 import torch
 from hivemind.optim.progress_tracker import GlobalTrainingProgress
-from lightning.storage import Path
+from lightning.app.storage import Path
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ProgressBarBase
 from pytorch_lightning.callbacks.progress.base import get_standard_metrics

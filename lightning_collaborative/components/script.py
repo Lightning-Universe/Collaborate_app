@@ -17,8 +17,8 @@ from hivemind import (
 )
 from hivemind.optim.grad_averager import GradientAverager
 from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
-from lightning.components.python import TracerPythonScript
-from lightning.utilities.tracer import Tracer
+from lightning.app.components.python import TracerPythonScript
+from lightning.app.utilities.tracer import Tracer
 from pytorch_lightning.strategies import CollaborativeStrategy
 
 from lightning_collaborative.components.callbacks import (
@@ -67,6 +67,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.contribution = None
         self.peers = None
         self.host_maddrs = None
+        self.checkpoint_dir = None
 
     def run(
         self,

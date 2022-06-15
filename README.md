@@ -8,7 +8,7 @@
 ## Installation
 
 ```
-git clone git@github.com:PyTorchLightning/lightning-collaborative.git
+git clone https://github.com/Lightning-AI/lightning-collaborative.git
 cd lightning-collaborative
 pip install -r requirements.txt
 pip install -e .
