@@ -412,7 +412,7 @@ if __name__ == "__main__":
     batch_size = 2
     num_workers = 0
     block_size = 128
-    n_layer = 4
+    n_layer = 8
     n_head = 16
     n_embd = 1024
     learning_rate = 6e-3

@@ -226,6 +226,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
         if self.cuda:
             return super()._run_tracer(init_globals)
 
+        # todo: with python 3.8 + macOS I don't think this is required anymore.
+        # this potentially is covered with the hacky check at the top of app.py.
         def run_trace():
             asyncio.set_event_loop(asyncio.new_event_loop())
             sys.argv = [self.script_path]

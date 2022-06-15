@@ -62,6 +62,7 @@ class TensorBoardWorker(LightningWork):
                 str(self.port),
             ]
         )
+        print("running on the cloud", self.running_on_cloud)
 
         # Download the log directory periodically
         while True:
