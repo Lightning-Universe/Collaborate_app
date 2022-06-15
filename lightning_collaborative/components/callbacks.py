@@ -49,6 +49,9 @@ class CollaborativeProgressTracker(Callback):
         visible_addresses = [
             str(a) for a in dht.get_visible_maddrs() if str(global_ip) in str(a)
         ]
+        print(
+            f"#TODO WARN if not client mode and private IPs ########## {dht.client_mode=}, {visible_addresses}"
+        )
         return visible_addresses
 
     @property
@@ -155,10 +158,7 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics = self.get_metrics(trainer, pl_module)
             metrics.pop("v_num")
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
-            line = (
-                f"Batch: [{self.train_batch_idx}] "
-                f"Metrics: {metrics}\r"
-            )
+            line = f"Batch: [{self.train_batch_idx}] " f"Metrics: {metrics}\r"
 
             if self._logs_queue.full():
                 self._logs_queue.get()

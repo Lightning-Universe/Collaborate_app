@@ -12,6 +12,7 @@ class CollaborativeTerminal:
         if self.invite_link != "":
             config = json.loads(self.invite_link.split("config=")[-1])
             self.power_sgd = config["powerSGD"]
+            self.client_mode = config["clientMode"]
             self.optimize_memory = config["optimizeMemory"]
             self.optimize_communication = config["optimizeCommunication"]
             self.batch_size = config["batchSize"]
@@ -31,9 +32,11 @@ class CollaborativeTerminal:
                     True,
                     True,
                 )
+                self.client_mode = False
                 self.batch_size = 16384
             else:
                 self.power_sgd = input("Enable Power SGD? [y/n]") == "y"
+                self.client_mode = input("Client (only) mode? [y/n]") == "y"
                 self.optimize_memory = input("Optimize memory usage? [y/n]") == "y"
                 self.optimize_communication = (
                     input("Overlap communication? [y/n]") == "y"

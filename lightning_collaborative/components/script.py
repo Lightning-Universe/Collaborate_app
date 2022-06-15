@@ -59,6 +59,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.optimize_communication = None
         self.optimize_memory = None
         self.power_sgd = None
+        self.client_mode = None
         self.is_server = None
         self.progress_state = None
         self.log_dir = None
@@ -72,6 +73,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         server: bool,
         peers: Optional[List[str]],
         power_sgd: bool,
+        client_mode: bool,
         optimize_communication: bool,
         optimize_memory: bool,
         batch_size: int,
@@ -91,6 +93,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.optimize_communication = optimize_communication
             self.optimize_memory = optimize_memory
             self.power_sgd = power_sgd
+            self.client_mode = client_mode
             self.is_server = server
             if self.is_server:
                 # use the first work that was spun up host as we assume that's the main node.
@@ -105,7 +108,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         def trainer_pre_fn(trainer, *args, **kwargs):
             # compresses values above threshold with 8bit Quantization, lower with Float16
             compression = SizeAdaptiveCompression(
-                threshold=2**16 + 1,
+                threshold=2 ** 16 + 1,
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
@@ -124,6 +127,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 averaging_timeout=60,
                 allreduce_timeout=60,
                 matchmaking_time=15,
+                client_mode=self.client_mode,
                 # Use PowerSGD to reduce communication overhead
                 grad_averager_factory=partial(
                     PowerSGDGradientAverager,
@@ -148,7 +152,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     num_warmup_steps=50,
                     num_training_steps=actual_steps,
                 ),
-                persistent=False
+                persistent=False,
             )
             kwargs["max_steps"] = max_steps
             kwargs["accelerator"] = "auto"
