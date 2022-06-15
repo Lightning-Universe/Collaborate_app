@@ -115,7 +115,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            kwargs["precision"] = 32
+            kwargs["precision"] = 16
             # todo shouldn't be hard-coded, some real YOLO numbers here
             max_steps = 10000000
             # max_steps * batch_size // global_batch_size
