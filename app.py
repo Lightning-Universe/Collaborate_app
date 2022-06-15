@@ -1,3 +1,8 @@
+import platform
+
+if platform.system() == "Darwin":
+    import multiprocessing
+    multiprocessing.set_start_method('fork')
 import json
 import os
 from typing import Optional
@@ -113,7 +118,7 @@ class TrainFlow(LightningFlow):
                 f"work_{device}",
                 CollaborativeLightningRunner(
                     script_path="train.py",
-                    run_once=False,
+                    cache_calls=False,
                     parallel=True,
                     skip_environment_check=self.skip_environment_check,
                     cloud_compute=CloudCompute(name="gpu", shm_size=4096),

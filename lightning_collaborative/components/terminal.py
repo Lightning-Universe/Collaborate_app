@@ -22,7 +22,7 @@ class CollaborativeTerminal:
         if self.invite_link == "":
             should_set_default = input(
                 "Do you want to automatically set defaults "
-                "(enable optimizations, global batch size of 16384)? [y/n, default y]"
+                "(enable optimizations, global batch size of 32768)? [y/n, default y]"
             )
             should_set_default = should_set_default == "" or should_set_default == "y"
             if should_set_default:
@@ -31,7 +31,7 @@ class CollaborativeTerminal:
                     True,
                     True,
                 )
-                self.batch_size = 16384
+                self.batch_size = 32768
             else:
                 self.power_sgd = input("Enable Power SGD? [y/n]") == "y"
                 self.optimize_memory = input("Optimize memory usage? [y/n]") == "y"

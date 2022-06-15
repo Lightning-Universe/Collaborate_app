@@ -156,7 +156,7 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics.pop("v_num")
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
             line = (
-                f"Batch: [{self.train_batch_idx}] "
+                f"Local Step: [{self.train_batch_idx}/{trainer.max_steps}] "
                 f"Metrics: {metrics}\r"
             )
 

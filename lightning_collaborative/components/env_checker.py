@@ -29,7 +29,7 @@ class EnvironmentChecker:
     def __init__(
         self,
         skip_environment_check: bool = False,
-        minimum_bandwidth_gb: int = 0,
+        minimum_bandwidth_gb: int = 0.05,
         min_cuda_memory_gb: int = 5,
     ):
         self.skip_environment_check = skip_environment_check
@@ -38,7 +38,9 @@ class EnvironmentChecker:
         self._bandwidth_cache = None
 
     def check_os(self):
-        return platform.system() == "Linux" or platform.system() == "Darwin"
+        return platform.system() == "Linux" or (
+            self.skip_environment_check and platform.system() == "Darwin"
+        )
 
     def _check_package_installed(self, package):
         try:
