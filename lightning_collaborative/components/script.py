@@ -103,7 +103,9 @@ class CollaborativeLightningRunner(TracerPythonScript):
 
     @property
     def client_mode(self):
-        return (not self.peers) or os.getenv("CLIENT_MODE", "0") == "1"
+        if os.getenv("CLIENT_MODE"):
+            return int(os.getenv("CLIENT_MODE")) == 1
+        return self.peers is not None
 
     def configure_tracer(self) -> Tracer:
         def trainer_pre_fn(trainer, *args, **kwargs):
