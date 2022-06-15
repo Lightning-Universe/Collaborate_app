@@ -68,6 +68,9 @@ const LightTooltip = styled(({ className, ...props }) => (
 }));
 
 function Options(props) {
+  var clientModeChange = (e) => {
+    props.setClientMode(e.target.checked)
+  };
   var powerSGDChange = (e) => {
     props.setPowerSGD(e.target.checked)
   };
@@ -84,6 +87,7 @@ function Options(props) {
           <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.optimizeCommunication} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
           <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.optimizeMemory} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
           <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.powerSGD} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
+          <FormControlLabel labelPlacement="start" control={<Switch disabled={true} checked={props.clientMode} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Client Mode</Typography>} />
         </FormGroup>
       </Box>
     );
@@ -94,6 +98,7 @@ function Options(props) {
         <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeCommunication} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Optimize Communication</Typography>} />
         <FormControlLabel labelPlacement="start" control={<Switch onChange={optimizeMemory} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Optimize GPU Memory</Typography>} />
         <FormControlLabel labelPlacement="start" control={<Switch onChange={powerSGDChange} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>PowerSGD</Typography>} />
+        <FormControlLabel labelPlacement="start" control={<Switch onChange={clientModeChange} size="small" sx={{ color: "#6e58d7" }} />} label={<Typography sx={{ fontSize: 14 }}>Client Mode</Typography>} />
       </FormGroup>
     </Box>
   );
@@ -270,6 +275,7 @@ function Config(props) {
         return;
       }
       var config = parseLink(e.target.value);
+      props.setClientMode(config.clientMode);
       props.setPowerSGD(config.powerSGD);
       props.setBatchSize(config.batchSize);
       props.setOptimizeMemory(config.optimizeMemory);
@@ -331,6 +337,7 @@ function StartTrain(props) {
       let state = structuredClone(props.lightningState);
       state.flows.train_flow.vars.start_setup = true;
       state.flows.train_flow.vars.invite_link = props.inviteText;
+      state.flows.train_flow.vars.client_mode = props.clientMode;
       state.flows.train_flow.vars.power_sgd = props.powerSGD;
       state.flows.train_flow.vars.devices = props.deviceState;
       state.flows.train_flow.vars.optimize_communication = props.optimizeCommunication;
@@ -422,6 +429,7 @@ export default function Train(props) {
   const [deviceState, setDeviceState] = React.useState(1)
   const [devices, setDevices] = React.useState(1)
   const [batchSize, setBatchSize] = React.useState(1024)
+  const [clientMode, setClientMode] = React.useState(false)
   const [powerSGD, setPowerSGD] = React.useState(false)
   const [optimizeCommunication, setOptimizeCommunication] = React.useState(false)
   const [optimizeMemory, setOptimizeMemory] = React.useState(false)
@@ -511,8 +519,8 @@ export default function Train(props) {
         </Typography>
         <Link rel="noopener noreferrer" target="_blank" sx={{ ml: 1, letterSpacing: 1 }} href="https://github.com/PyTorchLightning/lightning-collaborative#troubleshooting">Troubleshooting Guide</Link>
         {startTraining && stateReceived ? StopTrain({ lightningState, updateLightningState, shareInviteLink, setShareInviteLink, setPresetConfig, enableTrainState, startTraining, setStartTraining, logState, setLogState }) : null}
-        {!startTraining && stateReceived ? Config({ flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize }) : null}
-        {!startTraining && stateReceived ? StartTrain({ setChecksFailed, flowRunning, setFlowRunning, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, logState, setLogState }) : null}
+          {!startTraining && stateReceived ? Config({ flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, setInviteText, devices, setDevices, deviceState, setDeviceState, powerSGD, setPowerSGD, clientMode, setClientMode, setPresetConfig, presetConfig, optimizeCommunication, setOptimizeCommunication, optimizeMemory, setOptimizeMemory, batchSize, setBatchSize }) : null}
+          {!startTraining && stateReceived ? StartTrain({ setChecksFailed, flowRunning, setFlowRunning, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, enableTrainState, inviteText, devices, setDevices, deviceState, powerSGD, clientMode, optimizeCommunication, optimizeMemory, batchSize, startTraining, setStartTraining, logState, setLogState }) : null}
         {Setup({ checksFailed, flowRunning, lightningState, updateLightningState, shareInviteLink, setShareInviteLink, devices, setDevices, memory, setMemory, bandwidth, setBandwidth, completeLinux, setCompleteLinux, completeCUDA, setCompleteCUDA, completeInternet, setCompleteInternet, completePython, setCompletePython, completeMemory, setCompleteMemory, startInstallState, setStartInstallState, enableTrainState, setEnableTrainState, warningMessage, setWarningMessage })}
       </Container>
     </React.Fragment>

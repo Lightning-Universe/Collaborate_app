@@ -22,6 +22,7 @@ class TrainFlow(LightningFlow):
         self.share_link = None
         self.devices = None
         self.power_sgd = None
+        self.client_mode = None
         self.optimize_memory = None
         self.optimize_communication = None
         self.batch_size = None
@@ -43,6 +44,7 @@ class TrainFlow(LightningFlow):
         if hasattr(self, "work_0") and self.work_0.peers is not None:
             config = dict(
                 powerSGD=self.power_sgd,
+                clientMode=self.client_mode,
                 optimizeMemory=self.optimize_memory,
                 optimizeCommunication=self.optimize_communication,
                 batchSize=self.batch_size,
@@ -93,6 +95,7 @@ class TrainFlow(LightningFlow):
         self.invite_link = terminal.invite_link
         self.devices = terminal.devices
         self.power_sgd = terminal.power_sgd
+        self.client_mode = terminal.client_mode
         self.optimize_memory = terminal.optimize_memory
         self.optimize_communication = terminal.optimize_communication
         self.batch_size = terminal.batch_size
@@ -125,6 +128,7 @@ class TrainFlow(LightningFlow):
             server=(not self.invite_link) and (device == 0),
             peers=self.initial_peers,
             power_sgd=self.power_sgd,
+            client_mode=self.client_mode,
             optimize_memory=self.optimize_memory,
             optimize_communication=self.optimize_communication,
             batch_size=self.batch_size,
