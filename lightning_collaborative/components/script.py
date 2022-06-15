@@ -108,7 +108,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         def trainer_pre_fn(trainer, *args, **kwargs):
             # compresses values above threshold with 8bit Quantization, lower with Float16
             compression = SizeAdaptiveCompression(
-                threshold=2 ** 16 + 1,
+                threshold=2**16 + 1,
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
