@@ -8,7 +8,7 @@ import hivemind
 import pytorch_lightning as pl
 import torch
 from hivemind.optim.progress_tracker import GlobalTrainingProgress
-from lightning.storage import Path
+from lightning.app.storage import Path
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ProgressBarBase
 from pytorch_lightning.callbacks.progress.base import get_standard_metrics
@@ -184,9 +184,11 @@ class PLAppArtifactsTracker(Callback):
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
     ) -> None:
         pass
-        # todo: figure out how to move the artifact over
-        # if trainer.checkpoint_callback and trainer.checkpoint_callback.dirpath is not None:
-        #     self.work.checkpoint_dir = Path(trainer.checkpoint_callback.dirpath)
+        if (
+            trainer.checkpoint_callback
+            and trainer.checkpoint_callback.dirpath is not None
+        ):
+            self.work.checkpoint_dir = Path(trainer.checkpoint_callback.dirpath)
 
     @staticmethod
     def _get_logdir(trainer: "pl.Trainer") -> str:

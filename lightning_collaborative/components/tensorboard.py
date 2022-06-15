@@ -3,8 +3,8 @@ import subprocess
 import time
 from typing import Dict, List
 
-from lightning import BuildConfig, LightningFlow, LightningWork
-from lightning.storage import Path
+from lightning.app import BuildConfig, LightningFlow, LightningWork
+from lightning.app.storage import Path
 
 
 class TensorBoard(LightningFlow):
