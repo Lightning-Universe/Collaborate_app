@@ -27,6 +27,7 @@ from lightning_collaborative.components.callbacks import (
     PLAppArtifactsTracker,
     TrainMetrics,
 )
+from lightning_collaborative.components.checkpoint import HiveMindCheckpoint
 from lightning_collaborative.components.env_checker import EnvironmentChecker
 from lightning_collaborative.components.scheduler import WarmupLearningRateScheduler
 
@@ -169,6 +170,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 CollaborativeProgressBar(self),
                 PLAppArtifactsTracker(self),
                 TrainMetrics(self),
+                HiveMindCheckpoint(),
             ]
 
             if self.cuda and not self._running_on_cloud:

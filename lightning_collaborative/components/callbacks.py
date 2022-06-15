@@ -184,9 +184,11 @@ class PLAppArtifactsTracker(Callback):
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
     ) -> None:
         pass
-        # todo: figure out how to move the artifact over
-        # if trainer.checkpoint_callback and trainer.checkpoint_callback.dirpath is not None:
-        #     self.work.checkpoint_dir = Path(trainer.checkpoint_callback.dirpath)
+        if (
+            trainer.checkpoint_callback
+            and trainer.checkpoint_callback.dirpath is not None
+        ):
+            self.work.checkpoint_dir = Path(trainer.checkpoint_callback.dirpath)
 
     @staticmethod
     def _get_logdir(trainer: "pl.Trainer") -> str:
