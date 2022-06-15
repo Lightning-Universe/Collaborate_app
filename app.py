@@ -113,7 +113,7 @@ class TrainFlow(LightningFlow):
                 f"work_{device}",
                 CollaborativeLightningRunner(
                     script_path="train.py",
-                    run_once=False,
+                    cache_calls=False,
                     parallel=True,
                     skip_environment_check=self.skip_environment_check,
                     cloud_compute=CloudCompute(name="gpu-fast", shm_size=4096),

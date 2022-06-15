@@ -29,7 +29,7 @@ class EnvironmentChecker:
     def __init__(
         self,
         skip_environment_check: bool = False,
-        minimum_bandwidth_gb: int = 0,
+        minimum_bandwidth_gb: int = 0.05,
         min_cuda_memory_gb: int = 5,
     ):
         self.skip_environment_check = skip_environment_check
