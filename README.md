@@ -1,5 +1,5 @@
 <div align="center">
-   <img src="https://github.com/PyTorchLightning/lightning-collaborative/raw/fc02e5f9888812227ace4f55069aa7d6bef11bef/images/header.png?raw=true" width="50%">
+   <img src="https://github.com/Lightning-AI/lightning-collaborative/blob/feat/checkpoint/images/header.png?raw=true" width="40%">
    <div align="center">
       Collaboratively scale training a model with friends/colleagues or cloud compute.
    </div>
