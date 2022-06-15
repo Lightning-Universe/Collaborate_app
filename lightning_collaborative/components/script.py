@@ -101,6 +101,10 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.peers = peers
             return super().run()
 
+    @property
+    def client_mode(self):
+        return (not self.peers) or os.getenv("CLIENT_MODE", "0") == "1"
+
     def configure_tracer(self) -> Tracer:
         def trainer_pre_fn(trainer, *args, **kwargs):
             # compresses values above threshold with 8bit Quantization, lower with Float16
@@ -109,21 +113,21 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            # required for Mac support.
-            kwargs["precision"] = 32
+            kwargs["precision"] = 16
             # todo shouldn't be hard-coded, some real YOLO numbers here
             max_steps = 10000000
             actual_steps = int(max_steps * 2 // self.batch_size)
+            print(f"Client mode: {self.client_mode}")
             kwargs["strategy"] = CollaborativeStrategy(
+                client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
                 delay_state_averaging=True,
-                # not supported for mac OS.
-                delay_optimizer_step=False,
-                offload_optimizer=False,
+                delay_optimizer_step=True,
+                offload_optimizer=True,
                 reuse_grad_buffers=self.optimize_memory,
-                averaging_timeout=60,
-                allreduce_timeout=60,
-                matchmaking_time=15,
+                averaging_timeout=120,
+                allreduce_timeout=120,
+                matchmaking_time=30,
                 # Use PowerSGD to reduce communication overhead
                 grad_averager_factory=partial(
                     PowerSGDGradientAverager,
@@ -148,7 +152,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                     num_warmup_steps=50,
                     num_training_steps=actual_steps,
                 ),
-                persistent=False
+                persistent=False,
             )
             kwargs["max_steps"] = max_steps
             kwargs["accelerator"] = "auto"
@@ -191,12 +195,13 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self.python = True
         self.discovered_devices = setup.check_cuda_devices_available()
         self.cuda = self.discovered_devices > 0
-        self.internet = setup.sufficient_internet()
-        self.memory = setup.sufficient_memory()
-        self.current_memory = (
-            "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
-        )
-        self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
+        if self.linux:
+            self.internet = setup.sufficient_internet()
+            self.memory = setup.sufficient_memory()
+            self.current_memory = (
+                "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
+            )
+            self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
         print("Finished environment check")
