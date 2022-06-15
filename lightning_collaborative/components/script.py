@@ -115,17 +115,19 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 less=Float16Compression(),
                 greater_equal=Uniform8BitQuantization(),
             )
-            kwargs["precision"] = 16
+            kwargs["precision"] = 32
             # todo shouldn't be hard-coded, some real YOLO numbers here
             max_steps = 10000000
+            # max_steps * batch_size // global_batch_size
             actual_steps = int(max_steps * 2 // self.batch_size)
             print(f"Client mode: {self.client_mode}")
             kwargs["strategy"] = CollaborativeStrategy(
+                averager_opts=dict(bandwidth=100.0),
                 client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
                 delay_state_averaging=True,
-                delay_optimizer_step=True,
-                offload_optimizer=True,
+                delay_optimizer_step=False,
+                offload_optimizer=False,
                 reuse_grad_buffers=self.optimize_memory,
                 averaging_timeout=120,
                 allreduce_timeout=120,
@@ -142,6 +144,9 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 if self.optimize_memory
                 else NoCompression(),
                 state_averaging_compression=compression
+                if self.optimize_memory
+                else NoCompression(),
+                load_state_compression=compression
                 if self.optimize_memory
                 else NoCompression(),
                 verbose=True,
