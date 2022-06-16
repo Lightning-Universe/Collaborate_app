@@ -125,6 +125,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
             print(f"Client mode: {self.client_mode}")
             kwargs["strategy"] = CollaborativeStrategy(
                 averager_opts=dict(bandwidth=500.0),
+                average_state_every=5,
+                next_chunk_timeout=60,
                 client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
                 delay_state_averaging=self.optimize_communication,
@@ -132,8 +134,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 delay_optimizer_step=self.optimize_communication,
                 offload_optimizer=self.optimize_communication,
                 reuse_grad_buffers=self.optimize_memory,
-                averaging_timeout=240,
-                allreduce_timeout=240,
+                averaging_timeout=600,
+                allreduce_timeout=600,
                 matchmaking_time=60,
                 # Use PowerSGD to reduce communication overhead
                 grad_averager_factory=partial(
