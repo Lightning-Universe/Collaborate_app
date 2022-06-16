@@ -1,11 +1,18 @@
 <div align="center">
    <img src="https://github.com/Lightning-AI/lightning-collaborative/blob/main/images/header.png?raw=true" width="100%">
    <div align="center">
-      Collaboratively scale training a model with friends/colleagues or cloud compute.
+      Collaboratively train a model with friends/colleagues or using cloud compute.
    </div>
 </div>
 
 ## Installation
+
+```
+lightning launch app lightning/collaborate
+```
+
+
+## Development
 
 ```
 git clone https://github.com/Lightning-AI/lightning-collaborative.git
@@ -15,8 +22,6 @@ pip install -e .
 
 lightning run app app.py
 ```
-
-## Development
 
 Requires npm/node & yarn to be installed to create the build. We'll eventually ship the build once it's ready.
 
@@ -51,13 +56,25 @@ The app is far from perfect and there are some kinks to iron out. Below are help
 
 Please make sure you're using Google Chrome. Currently Firefox isn't supported.
 
+#### I see a lot of random errors and exceptions in the logs
+
+We're still early stages in making collaborative training stable, and a lot has to do with figuring out the right parameters with the Hivemind team.
+
 #### The UI keeps freezing and logs remain static
 
-Typically a refresh of the browser resolves this issue
+Typically a refresh of the browser resolves this issue.
 
 #### Why does my training keep loading peers?
 
 This usually is because the internet bandwidth isn't strong enough to download updates in time. We're investigating solutions to reduce the bandwidth requirements.
+
+### Where is the model saved?
+
+Locally, this is saved under `lightning_logs/` as a ckpt file. In the cloud we're working on making it available under the artifacts tab.
+
+### How do I change the code through the app?
+
+Currently this isn't supported, and you'll need to adjust the `train.py` manually as see fit.
 
 ### Other Known issues
 
