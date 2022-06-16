@@ -131,9 +131,9 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 delay_optimizer_step=self.optimize_communication,
                 offload_optimizer=self.optimize_communication,
                 reuse_grad_buffers=self.optimize_memory,
-                averaging_timeout=120,
-                allreduce_timeout=120,
-                matchmaking_time=30,
+                averaging_timeout=240,
+                allreduce_timeout=240,
+                matchmaking_time=60,
                 # Use PowerSGD to reduce communication overhead
                 grad_averager_factory=partial(
                     PowerSGDGradientAverager,
