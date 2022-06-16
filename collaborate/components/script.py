@@ -21,15 +21,15 @@ from lightning.app.components.python import TracerPythonScript
 from lightning.app.utilities.tracer import Tracer
 from pytorch_lightning.strategies import CollaborativeStrategy
 
-from lightning_collaborative.components.callbacks import (
+from collaborate.components.callbacks import (
     CollaborativeProgressBar,
     CollaborativeProgressTracker,
     PLAppArtifactsTracker,
     TrainMetrics,
 )
-from lightning_collaborative.components.checkpoint import HiveMindCheckpoint
-from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.scheduler import WarmupLearningRateScheduler
+from collaborate.components.checkpoint import HiveMindCheckpoint
+from collaborate.components.env_checker import EnvironmentChecker
+from collaborate.components.scheduler import WarmupLearningRateScheduler
 
 
 class CollaborativeLightningRunner(TracerPythonScript):
@@ -128,6 +128,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
                 delay_state_averaging=self.optimize_communication,
+                delay_grad_averaging=self.optimize_communication,
                 delay_optimizer_step=self.optimize_communication,
                 offload_optimizer=self.optimize_communication,
                 reuse_grad_buffers=self.optimize_memory,

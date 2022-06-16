@@ -14,10 +14,10 @@ from lightning.app.frontend import StaticWebFrontend
 from lightning.app.storage import Path
 from lightning.app.utilities.enum import WorkStageStatus
 
-from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.script import CollaborativeLightningRunner
-from lightning_collaborative.components.tensorboard import TensorBoard
-from lightning_collaborative.components.terminal import CollaborativeTerminal
+from collaborate.components.env_checker import EnvironmentChecker
+from collaborate.components.script import CollaborativeLightningRunner
+from collaborate.components.tensorboard import TensorBoard
+from collaborate.components.terminal import CollaborativeTerminal
 
 
 class TrainFlow(LightningFlow):
