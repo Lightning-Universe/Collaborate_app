@@ -17,7 +17,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, IterableDataset
 from transformers import AutoTokenizer
 
-from lightning_collaborative.components.scheduler import WarmupLearningRateScheduler
+from collaborate.components.scheduler import WarmupLearningRateScheduler
 
 
 def lamb_step(

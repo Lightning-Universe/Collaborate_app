@@ -4,7 +4,7 @@ __author_email__ = "sean@pytorchlightning.ai"
 __license__ = "Apache 2.0"
 __copyright__ = f"Copyright (c) 2022, {__author__}."
 __homepage__ = "https://github.com/PyTorchLightning/automl_app"
-__docs__ = "Lightning Collaborative Training."
+__docs__ = "Collaborate."
 __long_doc__ = """
 Lightning Collaborative Training
 """

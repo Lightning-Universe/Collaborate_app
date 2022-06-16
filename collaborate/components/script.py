@@ -21,15 +21,15 @@ from lightning.app.components.python import TracerPythonScript
 from lightning.app.utilities.tracer import Tracer
 from pytorch_lightning.strategies import CollaborativeStrategy
 
-from lightning_collaborative.components.callbacks import (
+from collaborate.components.callbacks import (
     CollaborativeProgressBar,
     CollaborativeProgressTracker,
     PLAppArtifactsTracker,
     TrainMetrics,
 )
-from lightning_collaborative.components.checkpoint import HiveMindCheckpoint
-from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.scheduler import WarmupLearningRateScheduler
+from collaborate.components.checkpoint import HiveMindCheckpoint
+from collaborate.components.env_checker import EnvironmentChecker
+from collaborate.components.scheduler import WarmupLearningRateScheduler
 
 
 class CollaborativeLightningRunner(TracerPythonScript):
@@ -37,7 +37,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs
     ):
         super().__init__(script_path, **kwargs)
-        self._running_on_cloud = None
+        self.running_on_cloud = None
         self._device = None
         self.logs = ""
         self.skip_environment_check = skip_environment_check
@@ -81,10 +81,10 @@ class CollaborativeLightningRunner(TracerPythonScript):
         root_flow_cuda_available: bool,
     ) -> None:
         # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
-        self._running_on_cloud = (
+        self.running_on_cloud = (
             not root_flow_cuda_available and torch.cuda.is_available()
         )
-        self._device = 0 if self._running_on_cloud else device
+        self._device = 0 if self.running_on_cloud else device
 
         self.run_environment_check()
         if self.success:
@@ -128,12 +128,13 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 client_mode=self.client_mode,
                 target_batch_size=self.batch_size,
                 delay_state_averaging=self.optimize_communication,
+                delay_grad_averaging=self.optimize_communication,
                 delay_optimizer_step=self.optimize_communication,
                 offload_optimizer=self.optimize_communication,
                 reuse_grad_buffers=self.optimize_memory,
-                averaging_timeout=120,
-                allreduce_timeout=120,
-                matchmaking_time=30,
+                averaging_timeout=240,
+                allreduce_timeout=240,
+                matchmaking_time=60,
                 # Use PowerSGD to reduce communication overhead
                 grad_averager_factory=partial(
                     PowerSGDGradientAverager,
@@ -174,7 +175,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 HiveMindCheckpoint(),
             ]
 
-            if self.cuda and not self._running_on_cloud:
+            if self.cuda and not self.running_on_cloud:
                 os.environ["CUDA_VISIBLE_DEVICES"] = str(self._device)
             return {}, args, kwargs
 
@@ -185,7 +186,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
     def run_environment_check(self):
         print("Starting environment check")
         setup = EnvironmentChecker(skip_environment_check=self.skip_environment_check)
-        if self._running_on_cloud:
+        if self.running_on_cloud:
             print("Running on cloud, skipping environment check")
             self.success = True
             self.cuda = True
@@ -226,6 +227,8 @@ class CollaborativeLightningRunner(TracerPythonScript):
         if self.cuda:
             return super()._run_tracer(init_globals)
 
+        # todo: with python 3.8 + macOS I don't think this is required anymore.
+        # this potentially is covered with the hacky check at the top of app.py.
         def run_trace():
             asyncio.set_event_loop(asyncio.new_event_loop())
             sys.argv = [self.script_path]

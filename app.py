@@ -14,10 +14,10 @@ from lightning.app.frontend import StaticWebFrontend
 from lightning.app.storage import Path
 from lightning.app.utilities.enum import WorkStageStatus
 
-from lightning_collaborative.components.env_checker import EnvironmentChecker
-from lightning_collaborative.components.script import CollaborativeLightningRunner
-from lightning_collaborative.components.tensorboard import TensorBoard
-from lightning_collaborative.components.terminal import CollaborativeTerminal
+from collaborate.components.env_checker import EnvironmentChecker
+from collaborate.components.script import CollaborativeLightningRunner
+from collaborate.components.tensorboard import TensorBoard
+from collaborate.components.terminal import CollaborativeTerminal
 
 
 class TrainFlow(LightningFlow):
@@ -123,7 +123,7 @@ class TrainFlow(LightningFlow):
                     cache_calls=False,
                     parallel=True,
                     skip_environment_check=self.skip_environment_check,
-                    cloud_compute=CloudCompute(name="gpu", shm_size=4096),
+                    cloud_compute=CloudCompute(name="gpu", shm_size=8192),
                 ),
             )
         getattr(self, f"work_{device}").run(
@@ -164,7 +164,10 @@ class RootFlow(LightningFlow):
         if self.train_flow.logs:
             # training has started, let's start the tensorboard logger
             if not getattr(self, "logger_component", None):
-                logger_component = TensorBoard(log_dir=self.train_flow.work_0.log_dir)
+                logger_component = TensorBoard(
+                    log_dir=self.train_flow.work_0.log_dir,
+                    running_on_cloud=self.train_flow.work_0.running_on_cloud,
+                )
                 if logger_component is not None:
                     setattr(self, "logger_component", logger_component)
             else:

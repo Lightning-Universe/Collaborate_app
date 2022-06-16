@@ -45,12 +45,12 @@ jobs:
           # install as archive
           pip install dist/*.tar.gz
           cd ..
-          python -c "import lightning_collaborative; print(lightning_collaborative.__version__)"
-          pip uninstall -y lightning-collaborative
+          python -c "import collaborate; print(collaborate.__version__)"
+          pip uninstall -y collaborate
       - name: Install | Uninstall package - wheel
         run: |
           # install as wheel
           pip install dist/*.whl
           cd ..
-          python -c "import lightning_collaborative; print(lightning_collaborative.__version__)"
-          pip uninstall -y lightning-collaborative
+          python -c "import collaborate; print(collaborate.__version__)"
+          pip uninstall -y collaborate
