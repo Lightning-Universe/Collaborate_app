@@ -3,4 +3,4 @@ tensorboard==2.9.0
 https://github.com/SeanNaren/hivemind/archive/refs/heads/macos.zip
 https://github.com/PyTorchLightning/pytorch-lightning/archive/refs/heads/feat/collaborative.zip
 transformers
-datasets
+datasets>=2.2.2
