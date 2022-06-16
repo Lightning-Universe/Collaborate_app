@@ -67,5 +67,8 @@ class TensorBoardWorker(LightningWork):
         # Download the log directory periodically
         while True:
             time.sleep(self._sync_every_n_seconds)
-            if self.running_on_cloud:
-                self.log_dir.get(overwrite=True)
+            try:
+                if self.running_on_cloud:
+                    self.log_dir.get(overwrite=True)
+            except Exception as e:
+                print("was unable to sync directory, error: ", e)
