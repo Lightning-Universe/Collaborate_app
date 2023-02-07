@@ -28,6 +28,7 @@ def lamb_step(
     eps: float,
 ):
     r"""Functional API that performs AdamW algorithm computation.
+
     See :class:`~torch.optim.AdamW` for details.
     """
     for i, param in enumerate(params):
@@ -55,7 +56,10 @@ def lamb_step(
 
 
 class LAMB(torch.optim.Optimizer):
-    r"""Implements LAMB algorithm. Based on PyTorch's Adam"""
+    r"""Implements LAMB algorithm.
+
+    Based on PyTorch's Adam
+    """
 
     def __init__(
         self,
@@ -355,7 +359,7 @@ class CharDataset(IterableDataset):
             # Split by chunks of max_len.
             result = {
                 k: [
-                    t[i : i + seq_length]  # noqa: E203
+                    t[i : i + seq_length]
                     for i in range(0, total_length, seq_length)
                 ]
                 for k, t in concatenated_examples.items()

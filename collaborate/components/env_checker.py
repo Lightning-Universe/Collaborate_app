@@ -45,7 +45,7 @@ class EnvironmentChecker:
     def _check_package_installed(self, package):
         try:
             importlib.import_module(package)
-        except:  # noqa: E722
+        except:
             return False
         return True
 
@@ -63,7 +63,7 @@ class EnvironmentChecker:
     def _check_pip_installed(self):
         try:
             importlib.import_module("pip")
-        except:  # noqa: E722
+        except:
             return False
 
     def sufficient_memory(self):
@@ -76,7 +76,7 @@ class EnvironmentChecker:
             return self._bandwidth_cache
         try:
             return self._run_speed_test()
-        except:  # noqa: E722
+        except:
             return 1  # todo: this is a hack because sometimes speed test fails
 
     def _run_speed_test(self):
