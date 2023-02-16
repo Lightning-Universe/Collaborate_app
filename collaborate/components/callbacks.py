@@ -49,7 +49,7 @@ class CollaborativeProgressTracker(Callback):
         try:
             s = time.gmtime(state.eta_next_epoch - time.time())
             s = time.strftime("%H:%M:%S", s)
-        except:
+        except Exception:
             s = "-"
         return {
             "progress": int((state.samples_accumulated / state.target_batch_size) * 100),
