@@ -9,12 +9,7 @@ from typing import List, Optional, Union
 import pytorch_lightning as pl
 import requests
 import torch
-from hivemind import (
-    Float16Compression,
-    NoCompression,
-    SizeAdaptiveCompression,
-    Uniform8BitQuantization,
-)
+from hivemind import Float16Compression, NoCompression, SizeAdaptiveCompression, Uniform8BitQuantization
 from hivemind.optim.grad_averager import GradientAverager
 from hivemind.optim.power_sgd_averager import PowerSGDGradientAverager
 from lightning.app.components.python import TracerPythonScript
@@ -33,9 +28,7 @@ from collaborate.components.scheduler import WarmupLearningRateScheduler
 
 
 class CollaborativeLightningRunner(TracerPythonScript):
-    def __init__(
-        self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs
-    ):
+    def __init__(self, script_path: Union[str, Path], skip_environment_check: bool, **kwargs):
         super().__init__(script_path, **kwargs)
         self.running_on_cloud = None
         self._device = None
@@ -81,9 +74,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         root_flow_cuda_available: bool,
     ) -> None:
         # only set the device if we're running in local mode. On the cloud we assume all works have 1 GPU.
-        self.running_on_cloud = (
-            not root_flow_cuda_available and torch.cuda.is_available()
-        )
+        self.running_on_cloud = not root_flow_cuda_available and torch.cuda.is_available()
         self._device = 0 if self.running_on_cloud else device
 
         self.run_environment_check()
@@ -145,15 +136,9 @@ class CollaborativeLightningRunner(TracerPythonScript):
                 )
                 if self.power_sgd
                 else GradientAverager,
-                grad_compression=compression
-                if self.optimize_memory
-                else NoCompression(),
-                state_averaging_compression=compression
-                if self.optimize_memory
-                else NoCompression(),
-                load_state_compression=compression
-                if self.optimize_memory
-                else NoCompression(),
+                grad_compression=compression if self.optimize_memory else NoCompression(),
+                state_averaging_compression=compression if self.optimize_memory else NoCompression(),
+                load_state_compression=compression if self.optimize_memory else NoCompression(),
                 verbose=True,
                 initial_peers=self.peers,
                 host_maddrs=self.host_maddrs,
@@ -198,9 +183,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
             self.internet = True
             # todo: hard coded here
             self.bandwidth = f"{1024:.1f}" + "MBit/s"
-            self.current_memory = (
-                "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
-            )
+            self.current_memory = "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
             print("Finished environment check")
             return
         self.linux = setup.check_os()
@@ -211,9 +194,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
         if self.linux:
             self.internet = setup.sufficient_internet()
             self.memory = setup.sufficient_memory()
-            self.current_memory = (
-                "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
-            )
+            self.current_memory = "/".join([f"{gpu:.1f}" for gpu in setup.cuda_memory()]) + "GiB"
             self.bandwidth = f"{setup.bandwidth() * 1024:.1f}" + "MBit/s"
         self.warning = setup.set_warning_message()
         self.success = setup.successful()
@@ -235,9 +216,7 @@ class CollaborativeLightningRunner(TracerPythonScript):
             asyncio.set_event_loop(asyncio.new_event_loop())
             sys.argv = [self.script_path]
             tracer = self.configure_tracer()
-            return tracer.trace(
-                self.script_path, *self.script_args, init_globals=init_globals
-            )
+            return tracer.trace(self.script_path, *self.script_args, init_globals=init_globals)
 
         process = multiprocessing.Process(target=run_trace)
         process.start()

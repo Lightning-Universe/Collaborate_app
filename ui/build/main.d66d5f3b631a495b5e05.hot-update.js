@@ -1617,7 +1617,7 @@ if (typeof Promise !== 'undefined' && $ReactRefreshCurrentExports$ instanceof Pr
 /******/ (() => {
 /******/ 	__webpack_require__.h = () => ("b72c7f69fec6318552b5")
 /******/ })();
-/******/ 
+/******/
 /******/ }
 );
 //# sourceMappingURL=main.d66d5f3b631a495b5e05.hot-update.js.map

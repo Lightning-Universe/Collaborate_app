@@ -11,7 +11,6 @@
 lightning launch app lightning/collaborate
 ```
 
-
 ## Development
 
 ```

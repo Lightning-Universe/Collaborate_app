@@ -55,9 +55,7 @@ class TrainFlow(LightningFlow):
                 batchSize=self.batch_size,
             )
             self.share_link = f"collaborative?{','.join(self.work_0.peers)}?config={json.dumps(config)}"
-            print(
-                f"Share this link with others to join your collaborative training session: {self.share_link}"
-            )
+            print(f"Share this link with others to join your collaborative training session: {self.share_link}")
 
     def run(self):
         if self.terminal_mode:
@@ -149,9 +147,7 @@ class RootFlow(LightningFlow):
         skip_environment_check = os.environ.get("SKIP_ENV_CHECK", str(0)) == str(1)
         self.terminal_mode = os.environ.get("TERMINAL_MODE", str(0)) == str(1)
         if self.terminal_mode:
-            print(
-                "Started in terminal mode, give a few moments for the app to start up..."
-            )
+            print("Started in terminal mode, give a few moments for the app to start up...")
         self.react_ui = ReactUI()
         self.train_flow = TrainFlow(
             skip_environment_check=skip_environment_check,
