@@ -12,9 +12,7 @@ class WarmupLearningRateScheduler(torch.optim.lr_scheduler.LambdaLR):
 
     def _linear_decay_with_warmup(self, current_step: int):
         if current_step < self.num_warmup_steps:
-            new_learning_rate = float(current_step) / float(
-                max(1, self.num_warmup_steps)
-            )
+            new_learning_rate = float(current_step) / float(max(1, self.num_warmup_steps))
         else:
             new_learning_rate = max(
                 0.0,

@@ -41,9 +41,7 @@ class TensorBoardWorker(LightningWork):
         sync_every_n_seconds: int = 5,
         running_on_cloud: bool = False,
     ) -> None:
-        super().__init__(
-            cloud_build_config=BuildConfig(requirements=["tensorboard"]), parallel=True
-        )
+        super().__init__(cloud_build_config=BuildConfig(requirements=["tensorboard"]), parallel=True)
         self.log_dir = log_dir
         self._sync_every_n_seconds = sync_every_n_seconds
         self.running_on_cloud = running_on_cloud

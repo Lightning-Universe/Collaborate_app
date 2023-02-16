@@ -3,12 +3,8 @@ import json
 
 class CollaborativeTerminal:
     def get_user_config(self):
-        print(
-            "You've started the app in terminal mode. Please type your configuration."
-        )
-        self.invite_link = input(
-            "Paste your invite link if you have any [default None]:"
-        )
+        print("You've started the app in terminal mode. Please type your configuration.")
+        self.invite_link = input("Paste your invite link if you have any [default None]:")
         if self.invite_link != "":
             config = json.loads(self.invite_link.split("config=")[-1])
             self.power_sgd = config["powerSGD"]
@@ -35,7 +31,5 @@ class CollaborativeTerminal:
             else:
                 self.power_sgd = input("Enable Power SGD? [y/n]") == "y"
                 self.optimize_memory = input("Optimize memory usage? [y/n]") == "y"
-                self.optimize_communication = (
-                    input("Overlap communication? [y/n]") == "y"
-                )
+                self.optimize_communication = input("Overlap communication? [y/n]") == "y"
                 self.batch_size = int(input("Batch Size? [integer number]"))

@@ -111,9 +111,7 @@ class LAMB(torch.optim.Optimizer):
                 loss = closure()
 
         if self.clip_max_norm is not None:
-            iter_params = (
-                param for group in self.param_groups for param in group["params"]
-            )
+            iter_params = (param for group in self.param_groups for param in group["params"])
             torch.nn.utils.clip_grad_norm_(iter_params, self.clip_max_norm)
 
         for group in self.param_groups:
@@ -137,13 +135,9 @@ class LAMB(torch.optim.Optimizer):
                     if len(state) == 0:
                         state["step"] = 0
                         # Exponential moving average of gradient values
-                        state["exp_avg"] = torch.zeros_like(
-                            p, memory_format=torch.preserve_format
-                        )
+                        state["exp_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                         # Exponential moving average of squared gradient values
-                        state["exp_avg_sq"] = torch.zeros_like(
-                            p, memory_format=torch.preserve_format
-                        )
+                        state["exp_avg_sq"] = torch.zeros_like(p, memory_format=torch.preserve_format)
 
                     exp_avgs.append(state["exp_avg"])
                     exp_avg_sqs.append(state["exp_avg_sq"])
@@ -201,15 +195,9 @@ class CausalSelfAttention(nn.Module):
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        k = (
-            self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
-        q = (
-            self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
-        v = (
-            self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
-        )  # (B, nh, T, hs)
+        k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
+        q = self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
+        v = self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
@@ -217,9 +205,7 @@ class CausalSelfAttention(nn.Module):
         att = F.softmax(att, dim=-1)
         att = self.attn_drop(att)
         y = att @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-        y = (
-            y.transpose(1, 2).contiguous().view(B, T, C)
-        )  # re-assemble all head outputs side by side
+        y = y.transpose(1, 2).contiguous().view(B, T, C)  # re-assemble all head outputs side by side
 
         # output projection
         y = self.resid_drop(self.proj(y))
@@ -283,9 +269,7 @@ class GPT(pl.LightningModule):
 
         self.block_size = self.config.block_size
         self.apply(self._init_weights)
-        self.blocks = nn.Sequential(
-            *(Block(self.config) for _ in range(self.config.n_layer))
-        )
+        self.blocks = nn.Sequential(*(Block(self.config) for _ in range(self.config.n_layer)))
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -301,12 +285,8 @@ class GPT(pl.LightningModule):
     def configure_optimizers(self):
         # create the optimizer
         no_decay = ["bias", "LayerNorm.weight"]
-        params_decay = [
-            p for n, p in self.named_parameters() if not any(nd in n for nd in no_decay)
-        ]
-        params_nodecay = [
-            p for n, p in self.named_parameters() if any(nd in n for nd in no_decay)
-        ]
+        params_decay = [p for n, p in self.named_parameters() if not any(nd in n for nd in no_decay)]
+        params_nodecay = [p for n, p in self.named_parameters() if any(nd in n for nd in no_decay)]
         optim_groups = [
             {"params": params_decay, "weight_decay": self.hparams.weight_decay},
             {"params": params_nodecay, "weight_decay": 0.0},
@@ -324,9 +304,7 @@ class GPT(pl.LightningModule):
 
         # forward the GPT model
         token_embeddings = self.tok_emb(idx)  # each index maps to a (learnable) vector
-        position_embeddings = self.pos_emb[
-            :, :t, :
-        ]  # each position maps to a (learnable) vector
+        position_embeddings = self.pos_emb[:, :t, :]  # each position maps to a (learnable) vector
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
@@ -347,9 +325,7 @@ class CharDataset(IterableDataset):
         self.tokenizer = tokenizer
         self.block_size = block_size
 
-        dataset = dataset.map(
-            lambda x: tokenizer(x["text"]), batched=True, remove_columns=["text"]
-        )
+        dataset = dataset.map(lambda x: tokenizer(x["text"]), batched=True, remove_columns=["text"])
 
         # append 1 for next word prediction
         seq_length = self.block_size + 1
@@ -365,10 +341,7 @@ class CharDataset(IterableDataset):
             total_length = (total_length // seq_length) * seq_length
             # Split by chunks of max_len.
             result = {
-                k: [
-                    t[i : i + seq_length]
-                    for i in range(0, total_length, seq_length)
-                ]
+                k: [t[i : i + seq_length] for i in range(0, total_length, seq_length)]
                 for k, t in concatenated_examples.items()
             }
             return result
@@ -403,9 +376,7 @@ class CharDataModule(pl.LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
         self.dataset = load_dataset("wikitext", name="wikitext-103-v1", streaming=True)
         self.block_size = block_size
-        self.train_dataset = CharDataset(
-            self.dataset["train"], self.tokenizer, block_size
-        )
+        self.train_dataset = CharDataset(self.dataset["train"], self.tokenizer, block_size)
 
     def train_dataloader(self):
         return DataLoader(
@@ -427,9 +398,7 @@ class TrainMetrics(Callback):
         self.accumulated_samples = 0
         self.epochs_contributed = 0
 
-    def on_fit_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
-    ) -> None:
+    def on_fit_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self._trainer = trainer
 
     def on_train_batch_end(

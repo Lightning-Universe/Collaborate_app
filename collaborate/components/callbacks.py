@@ -29,26 +29,18 @@ class CollaborativeProgressTracker(Callback):
 
         self.epoch = 0
 
-    def on_train_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx: int
-    ) -> None:
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx: int) -> None:
         self.work.progress_state = self.progress_state
         if self.work.peers is None:
             self.work.peers = self.peers
-        pl_module.log(
-            "num_peers", torch.tensor(trainer.strategy.num_peers), on_step=True
-        )
+        pl_module.log("num_peers", torch.tensor(trainer.strategy.num_peers), on_step=True)
 
     @property
     def peers(self):
         strategy: CollaborativeStrategy = self._trainer.strategy
         dht = strategy.dht
-        global_ip = hivemind.utils.networking.choose_ip_address(
-            dht.get_visible_maddrs()
-        )
-        visible_addresses = [
-            str(a) for a in dht.get_visible_maddrs() if str(global_ip) in str(a)
-        ]
+        global_ip = hivemind.utils.networking.choose_ip_address(dht.get_visible_maddrs())
+        visible_addresses = [str(a) for a in dht.get_visible_maddrs() if str(global_ip) in str(a)]
         return visible_addresses
 
     @property
@@ -60,9 +52,7 @@ class CollaborativeProgressTracker(Callback):
         except:
             s = "-"
         return {
-            "progress": int(
-                (state.samples_accumulated / state.target_batch_size) * 100
-            ),
+            "progress": int((state.samples_accumulated / state.target_batch_size) * 100),
             "epoch": state.epoch,
             "eta": s,
             "peers": state.num_peers,
@@ -76,9 +66,7 @@ class CollaborativeProgressTracker(Callback):
     def hivemind_optimizer(self) -> hivemind.Optimizer:
         return self._trainer.optimizers[0]
 
-    def on_fit_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
-    ) -> None:
+    def on_fit_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self._trainer = trainer
 
 
@@ -91,9 +79,7 @@ class TrainMetrics(Callback):
         self.accumulated_samples = 0
         self.epochs_contributed = 0
 
-    def on_fit_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
-    ) -> None:
+    def on_fit_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         self._trainer = trainer
 
     def on_train_batch_end(
@@ -122,14 +108,7 @@ class TrainMetrics(Callback):
     def contribution(self) -> int:
         return min(
             math.ceil(
-                (
-                    self.accumulated_samples
-                    / (
-                        self.hivemind_optimizer.target_batch_size
-                        * self.epochs_contributed
-                    )
-                )
-                * 100
+                (self.accumulated_samples / (self.hivemind_optimizer.target_batch_size * self.epochs_contributed)) * 100
             ),
             100,
         )
@@ -155,10 +134,7 @@ class CollaborativeProgressBar(ProgressBarBase):
             metrics = self.get_metrics(trainer, pl_module)
             metrics.pop("v_num")
             metrics = " ".join([f"{k}:{v}" for k, v in metrics.items()])
-            line = (
-                f"Local Step: [{self.train_batch_idx}/{trainer.max_steps}] "
-                f"Metrics: {metrics}\r"
-            )
+            line = f"Local Step: [{self.train_batch_idx}/{trainer.max_steps}] " f"Metrics: {metrics}\r"
 
             if self._logs_queue.full():
                 self._logs_queue.get()
@@ -180,14 +156,9 @@ class PLAppArtifactsTracker(Callback):
         log_dir = self._get_logdir(trainer)
         self.work.log_dir = Path(log_dir) if log_dir is not None else None
 
-    def on_train_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
-    ) -> None:
+    def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         pass
-        if (
-            trainer.checkpoint_callback
-            and trainer.checkpoint_callback.dirpath is not None
-        ):
+        if trainer.checkpoint_callback and trainer.checkpoint_callback.dirpath is not None:
             self.work.checkpoint_dir = Path(trainer.checkpoint_callback.dirpath)
 
     @staticmethod

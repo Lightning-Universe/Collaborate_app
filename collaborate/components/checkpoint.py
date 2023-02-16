@@ -20,9 +20,7 @@ class HiveMindCheckpoint(ModelCheckpoint):
         super().on_train_batch_end(trainer, pl_module, outputs, batch, batch_idx)
         if not hasattr(self, "_current_epoch"):
             self._current_epoch = hivemind_optimizer.local_epoch
-        if (
-            hivemind_optimizer.local_epoch - self._current_epoch
-        ) >= self.every_n_epochs:
+        if (hivemind_optimizer.local_epoch - self._current_epoch) >= self.every_n_epochs:
             print(f"Saving checkpoint to: {self.filepath}")
             self._save_checkpoint(trainer, self.filepath)
             self._current_epoch = hivemind_optimizer.local_epoch

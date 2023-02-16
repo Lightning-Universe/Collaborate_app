@@ -38,9 +38,7 @@ class EnvironmentChecker:
         self._bandwidth_cache = None
 
     def check_os(self):
-        return platform.system() == "Linux" or (
-            self.skip_environment_check and platform.system() == "Darwin"
-        )
+        return platform.system() == "Linux" or (self.skip_environment_check and platform.system() == "Darwin")
 
     def _check_package_installed(self, package):
         try:
