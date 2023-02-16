@@ -5,13 +5,13 @@ recursive-exclude __pycache__  *.py[cod] *.orig
 
 # Include the README and CHANGELOG
 include *.md
-recursive-include flashy *.md
+recursive-include collaborate *.md
 
 # Include the source
-recursive-include flashy *.py
+recursive-include collaborate *.py
 
 # Include templates
-recursive-include flashy/templates *.jinja
+recursive-include collaborate/templates *.jinja
 
 # Include the license file
 include LICENSE
